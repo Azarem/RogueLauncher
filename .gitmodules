@@ -1,0 +1,3 @@
+[submodule "RogueAPI"]
+	path = RogueAPI
+	url = https://github.com/Azarem/RogueAPI.git

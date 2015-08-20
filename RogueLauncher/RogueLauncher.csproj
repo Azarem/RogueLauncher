@@ -95,6 +95,10 @@
       <EmbedInteropTypes>False</EmbedInteropTypes>
       <Private>True</Private>
     </ProjectReference>
+    <ProjectReference Include="..\RogueAPI\RogueAPI.csproj">
+      <Project>{4fe7b32a-2a8f-4346-a739-0c4f91c85727}</Project>
+      <Name>RogueAPI</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="AssemblyTranslator.dll" />
