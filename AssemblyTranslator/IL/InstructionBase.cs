@@ -127,11 +127,11 @@ namespace AssemblyTranslator.IL
                 case OperandType.ShortInlineBrTarget:
                 case OperandType.InlineBrTarget: inst = new LabelInstruction(); break;
                 case OperandType.InlineField: inst = new FieldInstruction(); break;
-                case OperandType.InlineI: inst = new ILInt32Instruction(); break;
-                case OperandType.InlineI8: inst = new ILInt64Instruction(); break;
+                case OperandType.InlineI: inst = new Int32Instruction(); break;
+                case OperandType.InlineI8: inst = new Int64Instruction(); break;
                 case OperandType.InlineMethod: inst = new MethodInstruction(); break;
                 case OperandType.InlineNone: inst = new InstructionBase(); break;
-                case OperandType.InlineR: inst = new ILDoubleInstruction(); break;
+                case OperandType.InlineR: inst = new DoubleInstruction(); break;
                 case OperandType.InlineSig: inst = new SignatureInstruction(); break;
                 case OperandType.InlineString: inst = new StringInstruction(); break;
                 case OperandType.InlineSwitch: inst = new SwitchInstruction(); break;
@@ -143,8 +143,8 @@ namespace AssemblyTranslator.IL
                 case OperandType.ShortInlineVar:
                     inst = (opCode == OpCodes.Ldarga_S || opCode == OpCodes.Ldarg_S || opCode == OpCodes.Starg_S) ? (InstructionBase)new ParameterInstruction() : new LocalInstruction();
                     break;
-                case OperandType.ShortInlineI: inst = new ILInt8Instruction(); break;
-                case OperandType.ShortInlineR: inst = new ILSingleInstruction(); break;
+                case OperandType.ShortInlineI: inst = new Int8Instruction(); break;
+                case OperandType.ShortInlineR: inst = new SingleInstruction(); break;
                 default: throw new InvalidOperationException();
             }
 

@@ -74,6 +74,7 @@ namespace RogueLauncher
             GraphManager manager = new GraphManager(assemblyFileName);
 
             Rewrite.RogueCastle.Program.Rewrite(manager.Graph.Modules.SelectMany(x => x.TypeGraphs.Where(y => y.FullName == "RogueCastle.Program")).Single());
+            Rewrite.SpellSystem.Rewrite(manager);
 
             manager.CreateAssembly(newAssemblyName, debug);
             return manager.SaveAndGetBytes(PortableExecutableKinds.ILOnly | PortableExecutableKinds.Required32Bit, ImageFileMachine.I386, !debug);

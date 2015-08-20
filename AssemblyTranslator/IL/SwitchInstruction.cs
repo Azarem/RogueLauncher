@@ -14,6 +14,7 @@ namespace AssemblyTranslator.IL
         internal List<InstructionBase> _jumpToInstructions = new List<InstructionBase>();
 
         public override int OperandSize { get { return _jumpToInstructions.Count * 4 + 4; } }
+        public List<InstructionBase> JumpToInstructions { get { return _jumpToInstructions; } }
 
         //public ILSwitchInstruction(byte[] data, ref int offset) : base(data, ref offset) { }
         protected override void ReadOperand(byte[] data, ref int offset)

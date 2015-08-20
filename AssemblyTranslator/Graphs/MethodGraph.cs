@@ -16,6 +16,7 @@ namespace AssemblyTranslator.Graphs
 
         public InstructionList InstructionList { get { return _instructionList; } set { _instructionList = value; } }
         public CallingConventions CallingConvention { get { return _callingConvention; } set { _callingConvention = value; } }
+        public GraphList<ParameterGraph, MethodGraph> Parameters { get { return _parameters; } }
 
         public MethodGraph() : this(null) { }
         public MethodGraph(MethodBase method, TypeGraph parentGraph = null)

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace AssemblyTranslator.IL
 {
-    public class ILUInt8Instruction : Instruction<byte>
+    public class UInt8Instruction : Instruction<byte>
     {
         protected override void ReadOperand(byte[] data, ref int offset) { _operand = data[offset++]; }
         internal override void EmitInstruction(ILGenerator generator) { generator.Emit(_opCode, _operand); }
@@ -18,7 +18,7 @@ namespace AssemblyTranslator.IL
         }
     }
 
-    public class ILInt8Instruction : Instruction<sbyte>
+    public class Int8Instruction : Instruction<sbyte>
     {
         protected override void ReadOperand(byte[] data, ref int offset) { _operand = (sbyte)data[offset++]; }
         internal override void EmitInstruction(ILGenerator generator) { generator.Emit(_opCode, _operand); }
@@ -29,7 +29,7 @@ namespace AssemblyTranslator.IL
         }
     }
 
-    public class ILInt16Instruction : Instruction<short>
+    public class Int16Instruction : Instruction<short>
     {
         protected override void ReadOperand(byte[] data, ref int offset) { _operand = BitConverter.ToInt16(data, offset); offset += 2; }
         internal override void EmitInstruction(ILGenerator generator) { generator.Emit(_opCode, _operand); }
@@ -44,7 +44,7 @@ namespace AssemblyTranslator.IL
         }
     }
 
-    public class ILInt32Instruction : Instruction<int>
+    public class Int32Instruction : Instruction<int>
     {
         protected override void ReadOperand(byte[] data, ref int offset) { _operand = BitConverter.ToInt32(data, offset); offset += 4; }
         internal override void EmitInstruction(ILGenerator generator) { generator.Emit(_opCode, _operand); }
@@ -59,7 +59,7 @@ namespace AssemblyTranslator.IL
         }
     }
 
-    public class ILInt64Instruction : Instruction<long>
+    public class Int64Instruction : Instruction<long>
     {
         protected override void ReadOperand(byte[] data, ref int offset) { _operand = BitConverter.ToInt64(data, offset); offset += 8; }
         internal override void EmitInstruction(ILGenerator generator) { generator.Emit(_opCode, _operand); }
@@ -74,7 +74,7 @@ namespace AssemblyTranslator.IL
         }
     }
 
-    public class ILSingleInstruction : Instruction<float>
+    public class SingleInstruction : Instruction<float>
     {
         protected override void ReadOperand(byte[] data, ref int offset) { _operand = BitConverter.ToSingle(data, offset); offset += 4; }
         internal override void EmitInstruction(ILGenerator generator) { generator.Emit(_opCode, _operand); }
@@ -89,7 +89,7 @@ namespace AssemblyTranslator.IL
         }
     }
 
-    public class ILDoubleInstruction : Instruction<double>
+    public class DoubleInstruction : Instruction<double>
     {
         protected override void ReadOperand(byte[] data, ref int offset) { _operand = BitConverter.ToDouble(data, offset); offset += 8; }
         internal override void EmitInstruction(ILGenerator generator) { generator.Emit(_opCode, _operand); }
