@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{DB1A6A91-A2FE-4776-9ED4-F0136AAEC128}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AssemblyTranslator</RootNamespace>
+    <AssemblyName>AssemblyTranslator</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+    <DebugSymbols>false</DebugSymbols>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Graphs\AssemblyGraph.cs" />
+    <Compile Include="GraphManager.cs" />
+    <Compile Include="Graphs\ChildGraph.cs" />
+    <Compile Include="Graphs\CustomAttributeGraph.cs" />
+    <Compile Include="Graphs\EventGraph.cs" />
+    <Compile Include="Graphs\FieldGraph.cs" />
+    <Compile Include="Graphs\GraphList.cs" />
+    <Compile Include="Graphs\IChildObject.cs" />
+    <Compile Include="IL\ExceptionBlock.cs" />
+    <Compile Include="IL\FieldInstruction.cs" />
+    <Compile Include="IL\ILCode.cs" />
+    <Compile Include="IL\ILLocal.cs" />
+    <Compile Include="IL\InstructionBase.cs" />
+    <Compile Include="IL\InstructionList.cs" />
+    <Compile Include="IL\LabelInstruction.cs" />
+    <Compile Include="IL\LocalInstruction.cs" />
+    <Compile Include="IL\MemberInstruction.cs" />
+    <Compile Include="IL\MethodInstruction.cs" />
+    <Compile Include="IL\OpCodeList.cs" />
+    <Compile Include="IL\ParameterInstruction.cs" />
+    <Compile Include="IL\SignatureInstruction.cs" />
+    <Compile Include="IL\StringInstruction.cs" />
+    <Compile Include="IL\SwitchInstruction.cs" />
+    <Compile Include="IL\TokenInstruction.cs" />
+    <Compile Include="IL\TypeInstruction.cs" />
+    <Compile Include="IL\ValueInstructions.cs" />
+    <Compile Include="Graphs\IParentObject.cs" />
+    <Compile Include="Graphs\MemberGraph.cs" />
+    <Compile Include="Graphs\MethodGraph.cs" />
+    <Compile Include="Graphs\ModuleGraph.cs" />
+    <Compile Include="Graphs\ObjectGraph.cs" />
+    <Compile Include="Graphs\ParameterGraph.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Graphs\PropertyGraph.cs" />
+    <Compile Include="Graphs\TypeGraph.cs" />
+    <Compile Include="Util.cs" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
