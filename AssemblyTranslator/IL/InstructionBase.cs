@@ -12,12 +12,13 @@ namespace AssemblyTranslator.IL
     {
         internal int _lineNumber;
         internal OpCode _opCode;
-        protected InstructionList _list;
+        internal InstructionList _list;
         protected internal HashSet<InstructionBase> _referencedBy = new HashSet<InstructionBase>();
         protected internal Label? _referenceLabel;
         protected internal HashSet<ExceptionBlock> _exceptionBlocks = new HashSet<ExceptionBlock>();
 
         public OpCode OpCode { get { return _opCode; } set { _opCode = value; } }
+        public ILCode ILCode { get { return (ILCode)_opCode.Value; } }
         public int LineNumber { get { return _lineNumber; } }
         public virtual int OperandSize
         {
@@ -48,6 +49,35 @@ namespace AssemblyTranslator.IL
                 }
             }
         }
+
+        public virtual object RawOperand
+        {
+            get
+            {
+                switch (ILCode)
+                {
+                    case ILCode.Ldc_I4_0: return 0;
+                    case ILCode.Ldc_I4_1: return 1;
+                    case ILCode.Ldc_I4_2: return 2;
+                    case ILCode.Ldc_I4_3: return 3;
+                    case ILCode.Ldc_I4_4: return 4;
+                    case ILCode.Ldc_I4_5: return 5;
+                    case ILCode.Ldc_I4_6: return 6;
+                    case ILCode.Ldc_I4_7: return 7;
+                    case ILCode.Ldc_I4_8: return 8;
+                }
+                return null;
+            }
+        }
+
+        //internal InstructionBase() { }
+
+        //public InstructionBase(InstructionList list, OpCode opCode, int lineNumber = 0)
+        //{
+        //    _list = list;
+        //    _opCode = opCode;
+        //    _lineNumber = lineNumber;
+        //}
 
         protected virtual void ReadOperand(byte[] data, ref int offset) { }
         internal virtual void EmitInstruction(ILGenerator generator) { generator.Emit(_opCode); }
@@ -167,5 +197,7 @@ namespace AssemblyTranslator.IL
     {
         protected T _operand;
         public T Operand { get { return _operand; } set { _operand = value; } }
+
+        public override object RawOperand { get { return _operand; } }
     }
 }

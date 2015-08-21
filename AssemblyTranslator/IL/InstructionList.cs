@@ -237,20 +237,29 @@ namespace AssemblyTranslator.IL
 
 
         public int IndexOf(InstructionBase item) { return _instructions.IndexOf(item); }
-        public void Insert(int index, InstructionBase item) { _instructions.Insert(index, item); }
-        public void RemoveAt(int index) { _instructions.RemoveAt(index); }
+        public void Insert(int index, InstructionBase item) { if (item != null) { _instructions.Insert(index, item); item._list = this; } }
+        public void RemoveAt(int index) { _instructions[index]._list = null; _instructions.RemoveAt(index); }
         public InstructionBase this[int index]
         {
             get { return _instructions[index]; }
-            set { _instructions[index] = value; }
+            set
+            {
+                if (value == null)
+                    return;
+
+                if (index < _instructions.Count)
+                    _instructions[index]._list = null;
+                _instructions[index] = value;
+                value._list = this;
+            }
         }
-        public void Add(InstructionBase item) { _instructions.Add(item); }
+        public void Add(InstructionBase item) { if (item != null) { _instructions.Add(item); item._list = this; } }
         public void Clear() { _instructions.Clear(); }
         public bool Contains(InstructionBase item) { return _instructions.Contains(item); }
         public void CopyTo(InstructionBase[] array, int arrayIndex) { _instructions.CopyTo(array, arrayIndex); }
         public int Count { get { return _instructions.Count; } }
         public bool IsReadOnly { get { return false; } }
-        public bool Remove(InstructionBase item) { return _instructions.Remove(item); }
+        public bool Remove(InstructionBase item) { if (_instructions.Remove(item)) { item._list = null; return true; }; return false; }
         public IEnumerator<InstructionBase> GetEnumerator() { return _instructions.GetEnumerator(); }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return _instructions.GetEnumerator(); }
     }

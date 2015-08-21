@@ -23,7 +23,7 @@ namespace AssemblyTranslator.IL
         internal override void OptimizeInstruction()
         {
             var type = _operand < 4 ? _operand : _operand < 0x100 ? 4 : 5;
-            switch ((ILCode)_opCode.Value)
+            switch (ILCode)
             {
                 case ILCode.Starg: if (type != 5) _opCode = OpCodes.Starg_S; break;
                 case ILCode.Starg_S: if (type == 5) _opCode = OpCodes.Starg; break;

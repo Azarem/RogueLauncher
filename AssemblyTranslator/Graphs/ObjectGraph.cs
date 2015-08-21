@@ -16,7 +16,7 @@ namespace AssemblyTranslator.Graphs
         protected List<CustomAttributeGraph> _customAttributes = new List<CustomAttributeGraph>();
 
         //public AssemblyTranslator Translator { get { return _translator; } }
-        public TSource Source { get { return _sourceObject; } }
+        public TSource Source { get { return _sourceObject; } set { _sourceObject = value; } }
         public TBuilder Builder { get { return _builder; } }
 
         public List<CustomAttributeGraph> CustomAttributes { get { return _customAttributes; } }

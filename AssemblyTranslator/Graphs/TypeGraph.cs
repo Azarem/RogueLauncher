@@ -43,6 +43,7 @@ namespace AssemblyTranslator.Graphs
         public GraphList<EventGraph, TypeGraph> Events { get { return _eventGraphs; } }
         public GraphList<TypeGraph, TypeGraph> NestedTypes { get { return _typeGraphs; } }
         public string FullName { get { return _fullName; } set { _fullName = value; } }
+        public Type BaseType { get { return _baseType; } set { _baseType = value; } }
 
         public List<Type> Interfaces { get { return _interfaces; } set { _interfaces = value; } }
 

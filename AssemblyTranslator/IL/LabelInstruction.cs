@@ -55,7 +55,7 @@ namespace AssemblyTranslator.IL
 
             var offset = _jumpTo._lineNumber - (index + size);
             if (offset >= sbyte.MinValue && offset <= sbyte.MaxValue)
-                switch ((ILCode)_opCode.Value)
+                switch (ILCode)
                 {
                     case ILCode.Beq: _opCode = OpCodes.Beq_S; break;
                     case ILCode.Bge: _opCode = OpCodes.Bge_S; break;
@@ -73,7 +73,7 @@ namespace AssemblyTranslator.IL
                     case ILCode.Leave: _opCode = OpCodes.Leave_S; break;
                 }
             else
-                switch ((ILCode)_opCode.Value)
+                switch (ILCode)
                 {
                     case ILCode.Beq_S: _opCode = OpCodes.Beq; break;
                     case ILCode.Bge_S: _opCode = OpCodes.Bge; break;

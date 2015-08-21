@@ -69,6 +69,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Rewrite\Game.cs" />
     <Compile Include="Rewrite\Program.cs" />
     <Compile Include="Rewrite\SpellSystem.cs" />
     <Compile Include="Util.cs" />

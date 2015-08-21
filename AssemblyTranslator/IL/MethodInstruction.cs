@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AssemblyTranslator.Graphs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -10,6 +11,9 @@ namespace AssemblyTranslator.IL
 {
     public class MethodInstruction : TokenInstruction<MethodBase>
     {
+        internal MethodGraph _graphOperand;
+
+        public MethodGraph GraphOperand { get { return _graphOperand; } set { _graphOperand = value; } }
 
         internal override void EmitInstruction(ILGenerator generator)
         {
@@ -17,6 +21,13 @@ namespace AssemblyTranslator.IL
                 generator.Emit(_opCode, (ConstructorInfo)_operand);
             else
                 generator.Emit(_opCode, (MethodInfo)_operand);
+        }
+
+        internal override void TranslateOperand(GraphManager t, Type[] newGenerics = null)
+        {
+            if (_graphOperand != null)
+                _operand = _graphOperand.Builder;
+            base.TranslateOperand(t, newGenerics);
         }
 
         //internal override unsafe void WriteILBytes(ref byte* ptr, IList<int> fixups)

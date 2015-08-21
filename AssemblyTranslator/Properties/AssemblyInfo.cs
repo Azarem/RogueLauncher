@@ -37,7 +37,7 @@ using System.Runtime.InteropServices;
 
 #if DEBUG
 [assembly: Obfuscation(Exclude = false, Feature = "generate debug symbol: true")]
-[assembly: Obfuscation(Exclude = false, Feature = "preset(minimum);-anti debug;")]
+[assembly: Obfuscation(Exclude = false, Feature = "preset(minimum);-anti debug;-rename;")]
 #else
 [assembly: Obfuscation(Exclude = false, Feature = "preset(maximum);")]
 #endif

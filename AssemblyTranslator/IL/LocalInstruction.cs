@@ -31,7 +31,7 @@ namespace AssemblyTranslator.IL
             _operand = _list._locals[_index].LocalBuilder;
             var type = _index < 4 ? _index : _index < 0x100 ? 4 : 5;
 
-            switch ((ILCode)_opCode.Value)
+            switch (ILCode)
             {
                 case ILCode.Ldloca: if (type != 5) _opCode = OpCodes.Ldloca_S; break;
                 case ILCode.Ldloca_S: if (type == 5) _opCode = OpCodes.Ldloca; break;
