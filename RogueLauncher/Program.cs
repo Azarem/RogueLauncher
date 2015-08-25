@@ -85,10 +85,10 @@ namespace RogueLauncher
         {
             var n = new AssemblyName(e.Name);
 
-            if (n.Name == "AssemblyTranslator")
+            if (n.Name == "AssemblyTranslator" || n.Name == "RogueAPI")
             {
                 Assembly assembly = Assembly.GetExecutingAssembly();
-                var name = assembly.GetName().Name + ".AssemblyTranslator.dll";
+                var name = String.Format("{0}.{1}.dll", assembly.GetName().Name, n.Name);
                 byte[] asmBytes;
                 using (Stream stream = assembly.GetManifestResourceStream(name))
                 {
@@ -96,9 +96,18 @@ namespace RogueLauncher
                     stream.Read(asmBytes, 0, asmBytes.Length);
                 }
 
+                if (n.Name == "RogueAPI")
+                {
+                    name = n.Name + ".dll";
+                    using (var outStream = File.Open(name, FileMode.Create, FileAccess.Write))
+                        outStream.Write(asmBytes, 0, asmBytes.Length);
+
+                    return Assembly.LoadFrom(name);
+                }
+
                 byte[] pdbBytes = null;
 #if DEBUG
-                name = "AssemblyTranslator.pdb";
+                name = n.Name + ".pdb";
                 if (File.Exists(name))
                     using (Stream stream = File.OpenRead(name))
                     {

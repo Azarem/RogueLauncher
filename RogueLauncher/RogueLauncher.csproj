@@ -62,6 +62,9 @@
   </PropertyGroup>
   <PropertyGroup />
   <PropertyGroup />
+  <PropertyGroup>
+    <ApplicationIcon>LauncherIcon.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -101,6 +104,7 @@
     <ProjectReference Include="..\RogueAPI\RogueAPI.csproj">
       <Project>{4fe7b32a-2a8f-4346-a739-0c4f91c85727}</Project>
       <Name>RogueAPI</Name>
+      <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -109,13 +113,19 @@
   <ItemGroup>
     <Folder Include="Extenders\" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="LauncherIcon.ico" />
+    <EmbeddedResource Include="RogueAPI.dll" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>"$(SolutionDir)ConfuserEx\Confuser.CLI.exe" -n -o="$(TargetDir)." "$(TargetPath)"
-del "$(TargetDir)AssemblyTranslator.dll"</PostBuildEvent>
+del "$(TargetDir)AssemblyTranslator.dll"
+del "$(TargetDir)RogueAPI.dll"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>"$(SolutionDir)ConfuserEx\Confuser.CLI.exe" -n -o="$(ProjectDir)." "$(SolutionDir)AssemblyTranslator\bin\$(ConfigurationName)\AssemblyTranslator.dll"</PreBuildEvent>
+    <PreBuildEvent>"$(SolutionDir)ConfuserEx\Confuser.CLI.exe" -n -o="$(ProjectDir)." "$(SolutionDir)AssemblyTranslator\bin\$(ConfigurationName)\AssemblyTranslator.dll"
+xcopy /Y "$(SolutionDir)RogueAPI\bin\$(ConfigurationName)\RogueAPI.dll" "$(ProjectDir)"</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

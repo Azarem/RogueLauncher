@@ -21,11 +21,10 @@ namespace RogueLauncher.Rewrite
             var newMethod = new MethodGraph(initMethod.Source, initMethod.DeclaringObject);
 
 
-            InstructionList instr = new InstructionList(Util.GetMethodInfo(() => NewInitialize()));
+            InstructionList instr = new InstructionList(Util.GetMethodInfo<Game>(x => x.NewInitialize()));
             instr.Last(x => x.ILCode == ILCode.Ret).Replace(new InstructionBase() { OpCode = OpCodes.Ldarg_0 });
             instr.Add(new MethodInstruction() { OpCode = OpCodes.Call, GraphOperand = initMethod });
             instr.Add(new InstructionBase() { OpCode = OpCodes.Ret });
-
 
             newMethod.InstructionList = instr;
 
@@ -35,7 +34,7 @@ namespace RogueLauncher.Rewrite
         }
 
 
-        private static void NewInitialize()
+        protected virtual void NewInitialize()
         {
             PluginInitializer.Initialize();
         }

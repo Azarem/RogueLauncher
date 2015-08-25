@@ -13,28 +13,34 @@ namespace AssemblyTranslator.IL
     {
         internal List<InstructionBase> _instructions = new List<InstructionBase>();
         internal Module _module;
-        internal Type _type;
-        internal MethodBase _method;
+        //internal Type _type;
+        //internal MethodBase _method;
         internal List<ILLocal> _locals = new List<ILLocal>();
         internal List<ExceptionBlock> _exceptionBlocks = new List<ExceptionBlock>();
         internal Type[] _typeGenerics, _methodGenerics;
         internal ModuleBuilder _moduleBuilder;
         internal byte[] _oldData;
+        internal bool _noBody = false;
+
+        public InstructionList() { }
 
         public InstructionList(MethodBase method)
         {
             var body = method.GetMethodBody();
             if (body == null)
+            {
+                _noBody = true;
                 return;
+            }
 
             //Set fields
-            _method = method;
-            _type = method.DeclaringType;
+            //_method = method;
+            var type = method.DeclaringType;
             _module = method.Module;
 
             //Get generic arguments for symbol lookup
-            _typeGenerics = _type.IsGenericType ? _type.GetGenericArguments() : null;
-            _methodGenerics = _method.IsGenericMethod ? _method.GetGenericArguments() : null;
+            _typeGenerics = type.IsGenericType ? type.GetGenericArguments() : null;
+            _methodGenerics = method.IsGenericMethod ? method.GetGenericArguments() : null;
 
             //Create locals
             foreach (var l in body.LocalVariables)
@@ -91,7 +97,7 @@ namespace AssemblyTranslator.IL
 
         public void TranslateTypes(GraphManager t, Type[] newGenerics = null)
         {
-            if (_method == null)
+            if (_noBody)
                 return;
 
             //Translate local variables
@@ -109,13 +115,9 @@ namespace AssemblyTranslator.IL
 
         public void Rebuild(MethodBuilder builder)
         {
-            if (_method == null)
+            if (_noBody)
                 return;
 
-            if (_type.Name == "DemoEndScreen" && _method.Name == "OnEnter")
-            {
-
-            }
 
             _moduleBuilder = (ModuleBuilder)builder.Module;
 
@@ -157,36 +159,6 @@ namespace AssemblyTranslator.IL
                 //Create code
                 foreach (var i in _instructions)
                 {
-                    //if (i._referenceLabel != null)
-                    //    generator.MarkLabel(i._referenceLabel.Value);
-
-                    //foreach (var e in i._exceptionBlocks)
-                    //{
-                    //    if (e.EndInstruction == i)
-                    //    {
-                    //        generator.EndExceptionBlock();
-                    //        exceptionDepth--;
-                    //    }
-                    //    if (e.BeginInstruction == i)
-                    //    {
-                    //        generator.BeginExceptionBlock();
-                    //        exceptionDepth++;
-                    //    }
-                    //    if (e.HandlerInstruction == i)
-                    //        if (e.Flags == ExceptionHandlingClauseOptions.Clause)
-                    //            generator.BeginCatchBlock(e.CatchType);
-                    //        else if (e.Flags == ExceptionHandlingClauseOptions.Fault)
-                    //            generator.BeginFaultBlock();
-                    //        else if (e.Flags == ExceptionHandlingClauseOptions.Finally)
-                    //            generator.BeginFinallyBlock();
-                    //        else
-                    //            throw new NotSupportedException();
-                    //    else if (e.FilterInstruction == i)
-                    //        generator.BeginExceptFilterBlock();
-                    //}
-
-                    //i.EmitInstruction(generator);
-
                     i.WriteILBytes(ref p, fixups);
                 }
 
@@ -208,12 +180,6 @@ namespace AssemblyTranslator.IL
 
 
             builder.SetMethodBody(data, m_maxStackSize, localSig.GetSignature(), exceptions, fixups);
-
-            //if (_type.Name == "RoomObj" && _method.Name == "Update")
-            //{
-
-            //}
-
         }
 
         private int m_maxMidStackCur, m_maxMidStack, m_maxStackSize;
