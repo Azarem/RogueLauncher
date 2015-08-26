@@ -4,11 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-//[assembly: Obfuscation(Exclude = false, Feature = "external module:RogueAPI.dll")]
 namespace RogueLauncher
 {
     public class Program : MarshalByRefObject
     {
+        internal static int SteamAppId;
+
         static Program()
         {
             AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
@@ -21,61 +22,23 @@ namespace RogueLauncher
         static void Main(string[] args)
         {
             ((EntryPointDelegate)Assembly.Load(CreateAssembly()).EntryPoint.CreateDelegate(typeof(EntryPointDelegate)))(new string[] { });
-
-            //            byte[] asmBytes = null;
-            //            //AppDomain domain = AppDomain.CurrentDomain;
-            //            Assembly newAssembly;
-
-
-            //#if DEBUG
-            //            //Environment.CurrentDirectory = "C:\\Program Files (x86)\\Steam\\SteamApps\\common\\Rogue Legacy";
-            //            //domain.SetData("APPBASE", Environment.CurrentDirectory);
-
-
-
-            //            //asm.EntryPoint.Invoke()
-
-            //            return;
-            //#else
-            //            //The following does not work with maximum obfuscation
-            //            //Create new app domain to contain the assembly and perform translation
-            //            //domain = AppDomain.CreateDomain("ReflectionDomain", AppDomain.CurrentDomain.Evidence, new AppDomainSetup() { ApplicationBase = domain.BaseDirectory, ApplicationName = domain.SetupInformation.ApplicationName });
-
-            //            //domain.CreateInstanceAndUnwrap()
-            //            //Create remote instance of Program class
-            //            //var program = domain.CreateInstanceAndUnwrap(typeof(Program).Assembly.FullName, typeof(Program).FullName) as Program;
-            //            //var program = domain.CreateInstanceFromAndUnwrap(typeof(Program).Assembly.Location, typeof(Program).FullName) as Program;
-            //            //var program = new Program();
-
-            //            //Create assembly and retrieve the bytes
-            //            asmBytes = CreateAssembly();
-
-            //            //Destroy remote AppDomain
-            //            //AppDomain.Unload(domain);
-
-            //            //Clean up resources
-            //            //GC.Collect();
-            //            //GC.WaitForPendingFinalizers();
-            //            //GC.Collect();
-
-            //            //Attach assembly resolve handler to load dependent libraries (not automatic)
-
-            //            //Load raw assembly into running application
-            //            newAssembly = Assembly.Load(asmBytes);
-
-            //            //Execute new assembly entry point
-            //            newAssembly.EntryPoint.Invoke(null, new object[] { new string[] { } });
-            //#endif
         }
 
         //Used as a remote endpoint for creating the assembly in a workspace app domain
-        public static byte[] CreateAssembly(bool debug = false)
+        public static byte[] CreateAssembly()
         {
+#if DEBUG
+            bool debug = true;
+#else
+            bool debug = false;
+#endif
             GraphManager manager = new GraphManager(assemblyFileName);
 
-            Rewrite.RogueCastle.Program.Rewrite(manager.Graph.Modules.SelectMany(x => x.TypeGraphs.Where(y => y.FullName == "RogueCastle.Program")).Single());
-            Rewrite.SpellSystem.Rewrite(manager);
-            Rewrite.Game.Rewrite(manager);
+            Rewrite.Program.Process(manager);
+            Rewrite.SpellSystem.Process(manager);
+            Rewrite.Game.Process(manager);
+
+            manager.ReplaceType("RogueCastle.ProjectileData", typeof(RogueAPI.Projectiles.ProjectileInstance));
 
             manager.CreateAssembly(newAssemblyName, debug);
             return manager.SaveAndGetBytes(PortableExecutableKinds.ILOnly | PortableExecutableKinds.Required32Bit, ImageFileMachine.I386, !debug);

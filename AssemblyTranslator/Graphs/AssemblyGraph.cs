@@ -8,9 +8,9 @@ namespace AssemblyTranslator.Graphs
 {
     public class AssemblyGraph : ObjectGraph<Assembly, AssemblyBuilder>, IParentObject<ModuleGraph>
     {
-        protected string _fileName;
-        protected GraphList<ModuleGraph, AssemblyGraph> _modules;
-        protected AssemblyName _assemblyName = new AssemblyName();
+        internal string _fileName;
+        internal GraphList<ModuleGraph, AssemblyGraph> _modules;
+        internal AssemblyName _assemblyName = new AssemblyName();
 
         public GraphList<ModuleGraph, AssemblyGraph> Modules { get { return _modules; } }
         public AssemblyName AssemblyName { get { return _assemblyName; } set { _assemblyName = value; } }

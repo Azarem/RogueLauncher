@@ -1,11 +1,8 @@
-﻿using AssemblyTranslator;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AssemblyTranslator.IL
 {
@@ -21,6 +18,8 @@ namespace AssemblyTranslator.IL
         internal ModuleBuilder _moduleBuilder;
         internal byte[] _oldData;
         internal bool _noBody = false;
+
+        public List<ILLocal> Locals { get { return _locals; } }
 
         public InstructionList() { }
 

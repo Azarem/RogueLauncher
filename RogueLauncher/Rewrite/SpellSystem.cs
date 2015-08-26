@@ -1,18 +1,17 @@
 ﻿using AssemblyTranslator;
 using AssemblyTranslator.Graphs;
 using AssemblyTranslator.IL;
-using RogueAPI;
+using DS2DEngine;
+using RogueAPI.Spells;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
 
 namespace RogueLauncher.Rewrite
 {
     internal static class SpellSystem
     {
-        public static void Rewrite(GraphManager graph)
+        public static void Process(GraphManager graph)
         {
             var module = graph.Graph.Modules.First();
 
@@ -36,43 +35,67 @@ namespace RogueLauncher.Rewrite
             return def;
         }
 
+        [Obfuscation(Exclude = true)]
         private static string NewIcon(byte id)
         {
             return SpellDefinition.GetById(id).Icon;
         }
+
+        [Obfuscation(Exclude = true)]
         private static string NewToString(byte id)
         {
             return SpellDefinition.GetById(id).Name;
         }
+
+        [Obfuscation(Exclude = true)]
         private static string NewDescription(byte id)
         {
             return SpellDefinition.GetById(id).Description;
         }
+
+        [Obfuscation(Exclude = true)]
         private static float NewGetDamageMultiplier(byte id)
         {
             return SpellDefinition.GetById(id).DamageMultiplier;
         }
+
+        [Obfuscation(Exclude = true)]
         private static int NewGetRarity(byte id)
         {
             return SpellDefinition.GetById(id).Rarity;
         }
+
+        [Obfuscation(Exclude = true)]
         private static int NewGetManaCost(byte id)
         {
             return SpellDefinition.GetById(id).ManaCost;
         }
+
+        [Obfuscation(Exclude = true)]
         private static float NewGetXValue(byte id)
         {
             return SpellDefinition.GetById(id).MiscValue1;
         }
+
+        [Obfuscation(Exclude = true)]
         private static float NewGetYValue(byte id)
         {
             return SpellDefinition.GetById(id).MiscValue2;
+        }
+
+        [Obfuscation(Exclude = true)]
+        private static RogueAPI.Projectiles.ProjectileInstance NewGetProjData(byte id, GameObj source)
+        {
+            return SpellDefinition.GetById(id).GetProjectileInstance(source);
         }
 
         private static void PullSpellInformation(TypeGraph spellType)
         {
             //Should we even bother with the field values?
             //It is assumed that all switches are offset by -1
+
+            foreach (var field in spellType.Fields.Where(x => x.ConstantValue is byte))
+                GetSpell((byte)field.ConstantValue).Name = field.Name;
 
             foreach (var method in spellType.Methods)
             {
@@ -97,6 +120,8 @@ namespace RogueLauncher.Rewrite
 
         private static void PullSpellEv(TypeGraph spellEv)
         {
+            MethodGraph projMethod = null;
+
             foreach (var m in spellEv.Methods)
             {
                 if (m.Name == "GetDamageMultiplier")
@@ -124,7 +149,69 @@ namespace RogueLauncher.Rewrite
                     ReadSwitches(m.InstructionList, 7);
                     m.InstructionList = new InstructionList(Util.GetMethodInfo(() => NewGetYValue(0)));
                 }
+                else if (m.Name == "GetProjData")
+                {
+                    projMethod = m;
+                }
             }
+
+            //Rebuild GetProjData to return a ProjectileDefinition, for use during initialization
+            //It is less work to use the existing method instead of scraping fields from the IL
+
+            var newMethod = new MethodGraph(Util.GetMethodInfo(() => NewGetProjData(0, null)), spellEv);
+            newMethod.Source = projMethod.Source;
+            newMethod.Attributes &= ~MethodAttributes.Private;
+            newMethod.Attributes |= MethodAttributes.Public;
+            newMethod.Name = "GetProjData";
+
+            var newCon = Util.GetMethodInfo(() => new RogueAPI.Projectiles.ProjectileDefinition());
+
+            //Replace the old constructor and remove usage of the Target field. The Type replacer will handle the rest.
+            var instr = projMethod.InstructionList;
+            var ix = 0;
+            var count = instr.Count;
+            while(ix < count)
+            {
+                var i = instr[ix];
+                if(i is MethodInstruction)
+                {
+                    var mi = i as MethodInstruction;
+                    if (mi.Operand.IsConstructor && mi.Operand.DeclaringType.Name == "ProjectileData")
+                    {
+                        mi.Operand = newCon;
+                        instr.RemoveAt(ix - 1);
+                        count--;
+                        continue;
+                    }
+                }
+                else if(i is FieldInstruction)
+                {
+                    var fi = i as FieldInstruction;
+                    if(fi.ILCode == ILCode.Stfld && fi.Operand.Name == "Target")
+                    {
+                        instr.RemoveAt(ix--);
+                        instr.RemoveAt(ix--);
+                        instr.RemoveAt(ix);
+                        count -= 3;
+                        continue;
+                    }
+                }
+                ix++;
+            }
+
+            //Change return type
+            projMethod.Parameters[0].ParameterType = typeof(RogueAPI.Projectiles.ProjectileDefinition);
+            //Remove GameObj parameter
+            projMethod.Parameters.RemoveAt(2);
+
+            //Change local types
+            foreach (var l in instr.Locals)
+                if (l.Type.Name == "ProjectileData")
+                    l.Type = typeof(RogueAPI.Projectiles.ProjectileDefinition);
+
+            //Change name and remove source from graph
+            projMethod.Name = "_GetProjData";
+            projMethod.Source = null;
         }
 
         private static void SetField(byte id, int type, object value)
@@ -132,7 +219,7 @@ namespace RogueLauncher.Rewrite
             var def = GetSpell(id);
             switch (type)
             {
-                case 0: def.Name = (string)value; break;
+                case 0: def.DisplayName = (string)value; break;
                 case 1: def.Description = (string)value; break;
                 case 2: def.Icon = (string)value; break;
                 case 3: def.DamageMultiplier = (float)value; break;

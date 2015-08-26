@@ -9,10 +9,10 @@ namespace AssemblyTranslator.Graphs
 {
     public class MethodGraph : MemberGraph<MethodBase, MethodBuilder, MethodAttributes, TypeGraph, MethodGraph>, IParentObject<ParameterGraph>
     {
-        private List<Type> _genericArguments = new List<Type>();
-        private GraphList<ParameterGraph, MethodGraph> _parameters;
-        protected InstructionList _instructionList;
-        protected CallingConventions _callingConvention;
+        internal List<Type> _genericArguments = new List<Type>();
+        internal GraphList<ParameterGraph, MethodGraph> _parameters;
+        internal InstructionList _instructionList;
+        internal CallingConventions _callingConvention;
 
         public InstructionList InstructionList { get { return _instructionList; } set { _instructionList = value; } }
         public CallingConventions CallingConvention { get { return _callingConvention; } set { _callingConvention = value; } }

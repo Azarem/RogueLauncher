@@ -8,8 +8,8 @@ namespace AssemblyTranslator.Graphs
 {
     public class ModuleGraph : ChildGraph<Module, ModuleBuilder, AssemblyGraph, ModuleGraph>, IParentObject<TypeGraph>
     {
-        protected GraphList<TypeGraph, ModuleGraph> _typeGraphs;
-        protected string _name;
+        internal GraphList<TypeGraph, ModuleGraph> _typeGraphs;
+        internal string _name;
 
         public GraphList<TypeGraph, ModuleGraph> TypeGraphs { get { return _typeGraphs; } }
 

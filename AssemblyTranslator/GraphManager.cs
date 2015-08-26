@@ -10,12 +10,13 @@ namespace AssemblyTranslator
 {
     public class GraphManager
     {
-        private Dictionary<Module, ModuleBuilder> moduleCache = new Dictionary<Module, ModuleBuilder>();
-        private Dictionary<Type, TypeBuilder> typeCache = new Dictionary<Type, TypeBuilder>();
-        private Dictionary<MethodBase, MethodBuilder> methodCache = new Dictionary<MethodBase, MethodBuilder>();
-        private Dictionary<FieldInfo, FieldBuilder> fieldCache = new Dictionary<FieldInfo, FieldBuilder>();
-        private Dictionary<PropertyInfo, PropertyBuilder> propertyCache = new Dictionary<PropertyInfo, PropertyBuilder>();
-        private Dictionary<EventInfo, EventBuilder> eventCache = new Dictionary<EventInfo, EventBuilder>();
+        private Dictionary<Module, Module> moduleCache = new Dictionary<Module, Module>();
+        private Dictionary<Type, Type> typeCache = new Dictionary<Type, Type>();
+        private Dictionary<MethodBase, MethodBase> methodCache = new Dictionary<MethodBase, MethodBase>();
+        private Dictionary<FieldInfo, FieldInfo> fieldCache = new Dictionary<FieldInfo, FieldInfo>();
+        private Dictionary<PropertyInfo, PropertyInfo> propertyCache = new Dictionary<PropertyInfo, PropertyInfo>();
+        private Dictionary<EventInfo, EventInfo> eventCache = new Dictionary<EventInfo, EventInfo>();
+        //private Dictionary<Type, Type> typeReplacements = new Dictionary<Type, Type>();
         private Assembly sourceAssembly;
         internal ModuleBuilder CurrentModuleBuilder;
         private Assembly _callingAssembly;
@@ -38,7 +39,9 @@ namespace AssemblyTranslator
         public Assembly TypeResolve(object sender, ResolveEventArgs e)
         {
             var builder = typeCache.Values.FirstOrDefault(z => z.Name == e.Name);
-            return builder != null ? builder.CreateType().Assembly : null;
+            if (builder is TypeBuilder)
+                return ((TypeBuilder)builder).CreateType().Assembly;
+            return builder != null ? builder.Assembly : null;
         }
 
         public void CreateAssembly(string newName, bool debug = false)
@@ -151,7 +154,7 @@ namespace AssemblyTranslator
 
         internal PropertyInfo GetProperty(PropertyInfo info)
         {
-            PropertyBuilder newProp;
+            PropertyInfo newProp;
             if (propertyCache.TryGetValue(info, out newProp))
                 return newProp;
             //if (info.DeclaringType.Assembly == sourceAssembly)
@@ -179,7 +182,7 @@ namespace AssemblyTranslator
                 {
                     if (info.IsGenericMethod)
                     {
-                        var def = methodCache[((MethodInfo)info).GetGenericMethodDefinition()];
+                        var def = (MethodBuilder)methodCache[((MethodInfo)info).GetGenericMethodDefinition()];
                         var args = def.GetGenericArguments();
                         info = def.MakeGenericMethod(info.GetGenericArguments().Select(x => GetType(x, args)).ToArray());
                     }
@@ -222,7 +225,7 @@ namespace AssemblyTranslator
         }
         internal FieldInfo GetField(FieldInfo info)
         {
-            FieldBuilder newField;
+            FieldInfo newField;
             if (fieldCache.TryGetValue(info, out newField))
                 return newField;
             //if (info.DeclaringType.Assembly == sourceAssembly)
@@ -277,12 +280,12 @@ namespace AssemblyTranslator
             return info;
         }
 
-        internal void SetType(Type source, TypeBuilder builder) { typeCache[source] = builder; }
-        internal void SetProperty(PropertyInfo source, PropertyBuilder builder) { propertyCache[source] = builder; }
-        internal void SetMethod(MethodBase source, MethodBuilder builder) { methodCache[source] = builder; }
-        internal void SetEvent(EventInfo source, EventBuilder builder) { eventCache[source] = builder; }
-        internal void SetField(FieldInfo source, FieldBuilder builder) { fieldCache[source] = builder; }
-        internal void SetModule(Module source, ModuleBuilder builder) { moduleCache[source] = builder; }
+        internal void SetType(Type source, Type builder) { typeCache[source] = builder; }
+        internal void SetProperty(PropertyInfo source, PropertyInfo builder) { propertyCache[source] = builder; }
+        internal void SetMethod(MethodBase source, MethodBase builder) { methodCache[source] = builder; }
+        internal void SetEvent(EventInfo source, EventInfo builder) { eventCache[source] = builder; }
+        internal void SetField(FieldInfo source, FieldInfo builder) { fieldCache[source] = builder; }
+        internal void SetModule(Module source, Module builder) { moduleCache[source] = builder; }
 
         internal T GetMember<T>(object member, Type[] genericLookup = null) where T : class
         {
@@ -307,6 +310,12 @@ namespace AssemblyTranslator
         //        return eventCache[info];
         //    return info;
         //}
+
+        public void ReplaceType(string typeName, Type newType)
+        {
+            var graph = _graph._modules.SelectMany(x => x._typeGraphs.Where(y => y._fullName == typeName)).First();
+            graph._replacementType = newType;
+        }
 
 
     }

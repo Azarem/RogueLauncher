@@ -11,9 +11,9 @@ namespace AssemblyTranslator.Graphs
         //where TParent : class
     {
         //protected AssemblyTranslator _translator;
-        protected TSource _sourceObject;
-        protected TBuilder _builder;
-        protected List<CustomAttributeGraph> _customAttributes = new List<CustomAttributeGraph>();
+        internal TSource _sourceObject;
+        internal TBuilder _builder;
+        internal List<CustomAttributeGraph> _customAttributes = new List<CustomAttributeGraph>();
 
         //public AssemblyTranslator Translator { get { return _translator; } }
         public TSource Source { get { return _sourceObject; } set { _sourceObject = value; } }

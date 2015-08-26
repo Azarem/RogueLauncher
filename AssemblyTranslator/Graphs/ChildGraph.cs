@@ -9,7 +9,7 @@ namespace AssemblyTranslator.Graphs
         where TSelf : class, IChildObject<TParent>
         where TParent : class, IParentObject<TSelf>
     {
-        protected TParent _parentObject;
+        internal TParent _parentObject;
 
         public virtual TParent DeclaringObject
         {

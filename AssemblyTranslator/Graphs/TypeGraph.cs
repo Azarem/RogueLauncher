@@ -11,18 +11,19 @@ namespace AssemblyTranslator.Graphs
     {
         private static ConstructorInfo _typeBuildConstructor = typeof(TypeBuilder).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(string), typeof(TypeAttributes), typeof(Type), typeof(Type[]), typeof(ModuleBuilder), typeof(PackingSize), typeof(int), typeof(TypeBuilder) }, null);
 
-        protected ModuleGraph _moduleGraph;
-        protected GraphList<MethodGraph, TypeGraph> _methodGraphs;
-        protected GraphList<PropertyGraph, TypeGraph> _propertyGraphs;
-        protected GraphList<FieldGraph, TypeGraph> _fieldGraphs;
-        protected GraphList<EventGraph, TypeGraph> _eventGraphs;
-        protected GraphList<TypeGraph, TypeGraph> _typeGraphs;
-        protected List<Type> _interfaces = new List<Type>();
-        protected TypeGraph _declaringType;
-        protected PackingSize _packingSize;
-        protected string _fullName;
-        protected int _typeSize;
-        protected Type _baseType;
+        internal ModuleGraph _moduleGraph;
+        internal GraphList<MethodGraph, TypeGraph> _methodGraphs;
+        internal GraphList<PropertyGraph, TypeGraph> _propertyGraphs;
+        internal GraphList<FieldGraph, TypeGraph> _fieldGraphs;
+        internal GraphList<EventGraph, TypeGraph> _eventGraphs;
+        internal GraphList<TypeGraph, TypeGraph> _typeGraphs;
+        internal List<Type> _interfaces = new List<Type>();
+        internal TypeGraph _declaringType;
+        internal PackingSize _packingSize;
+        internal string _fullName;
+        internal int _typeSize;
+        internal Type _baseType;
+        internal Type _replacementType;
 
         public ModuleGraph Module
         {
@@ -106,35 +107,70 @@ namespace AssemblyTranslator.Graphs
 
         internal void DeclareType(GraphManager translator)
         {
-            TypeBuilder parent = null;
-            string name = _fullName;
-            if (_parentObject != null)
+            if (_replacementType == null)
             {
-                name = Regex.Match(_fullName, "([^+.]+)$").Groups[1].Value;
-                parent = _parentObject._builder;
+                TypeBuilder parent = null;
+                string name = _fullName;
+                if (_parentObject != null)
+                {
+                    name = Regex.Match(_fullName, "([^+.]+)$").Groups[1].Value;
+                    parent = _parentObject._builder;
+                }
+                _builder = Util.DefineTypeBuilder(name, _attributes, translator.GetType(_baseType), _interfaces.Select(x => translator.GetType(x)).ToArray(), _moduleGraph.Builder, _packingSize, _typeSize, parent);
             }
-            _builder = Util.DefineTypeBuilder(name, _attributes, translator.GetType(_baseType), _interfaces.Select(x => translator.GetType(x)).ToArray(), _moduleGraph.Builder, _packingSize, _typeSize, parent);
 
-            translator.SetType(_sourceObject ?? _builder, _builder);
+            translator.SetType(_sourceObject ?? _builder, _replacementType ?? _builder);
         }
 
         internal void DeclareMembers(GraphManager translator)
         {
-            foreach (var f in _fieldGraphs)
-                f.DeclareMember(translator);
+            if (_replacementType == null)
+            {
+                foreach (var f in _fieldGraphs)
+                    f.DeclareMember(translator);
 
-            foreach (var p in _propertyGraphs)
-                p.DeclareMember(translator);
+                foreach (var p in _propertyGraphs)
+                    p.DeclareMember(translator);
 
-            foreach (var e in _eventGraphs)
-                e.DeclareMember(translator);
+                foreach (var e in _eventGraphs)
+                    e.DeclareMember(translator);
 
-            foreach (var m in _methodGraphs)
-                m.DeclareMember(translator);
+                foreach (var m in _methodGraphs)
+                    m.DeclareMember(translator);
+            }
+            else
+            {
+                var members = _replacementType.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+
+                foreach (var f in _fieldGraphs)
+                    translator.SetField(f._sourceObject, members.FirstOrDefault(x => x is FieldInfo && x.Name == f.Name) as FieldInfo);
+
+                foreach (var p in _propertyGraphs)
+                    translator.SetProperty(p._sourceObject, members.FirstOrDefault(x => x is PropertyInfo && x.Name == p.Name) as PropertyInfo);
+
+                foreach (var e in _eventGraphs)
+                    translator.SetEvent(e._sourceObject, members.FirstOrDefault(x => x is EventInfo && x.Name == e.Name) as EventInfo);
+
+                foreach (var m in _methodGraphs)
+                    translator.SetMethod(m._sourceObject, members.FirstOrDefault(x => {
+                        if(!(x is MethodBase) || x.Name != m.Name)
+                            return false;
+
+                        var p = ((MethodBase)x).GetParameters();
+
+                        if(p.Length + 1 != m._parameters.Count)
+                            return false;
+
+                        return p.All(y => m._parameters[y.Position + 1].ParameterType == y.ParameterType);
+                    }) as MethodBase);
+            }
         }
 
         internal void DefineMembers(GraphManager translator)
         {
+            if (_replacementType != null)
+                return;
+
             foreach (var f in _fieldGraphs)
                 f.DefineMember(translator);
 
@@ -153,12 +189,18 @@ namespace AssemblyTranslator.Graphs
 
         internal void DefineCode(GraphManager translator)
         {
+            if (_replacementType != null)
+                return;
+
             foreach (var m in _methodGraphs)
                 m.DefineCode(translator);
         }
 
         internal void CreateType()
         {
+            if (_replacementType != null)
+                return;
+
             _builder.CreateType();
         }
 
