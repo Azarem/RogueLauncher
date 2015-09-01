@@ -2,6 +2,7 @@
 using System.Linq;
 using AssemblyTranslator.IL;
 using AssemblyTranslator;
+using System.Reflection.Emit;
 
 namespace RogueLauncher.Rewrite
 {
@@ -21,8 +22,9 @@ namespace RogueLauncher.Rewrite
                 var i = instr[ix] as MethodInstruction;
                 if(i != null && i.Operand.DeclaringType.Name == "SWManager" && i.Operand.Name == "init")
                 {
-                    RogueLauncher.Program.SteamAppId = (int)instr[ix - 1].RawOperand;
-                    PInvoke.SetEnvironmentVariable("SteamAppId", RogueLauncher.Program.SteamAppId.ToString());
+                    Environment.SetEnvironmentVariable("SteamAppId", instr[ix - 1].RawOperand.ToString());
+                    //RogueLauncher.Program.SteamAppId = (int)instr[ix - 1].RawOperand;
+                    //PInvoke.SetEnvironmentVariable("SteamAppId", RogueLauncher.Program.SteamAppId.ToString());
                     break;
                 }
                 ix++;

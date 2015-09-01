@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -70,6 +71,9 @@ namespace AssemblyTranslator.IL
             foreach (var i in _instructions)
                 i.ParseOperand();
         }
+
+        public InstructionList(Delegate expression) : this(expression.Method) { }
+        public InstructionList(LambdaExpression expression) : this(expression.Compile().Method) { }
 
         public MethodBase ResolveMethod(int token) { return _module.ResolveMethod(token, _typeGenerics, _methodGenerics); }
         public FieldInfo ResolveField(int token) { return _module.ResolveField(token, _typeGenerics, _methodGenerics); }

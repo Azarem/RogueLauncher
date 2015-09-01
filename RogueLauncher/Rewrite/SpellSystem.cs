@@ -20,9 +20,11 @@ namespace RogueLauncher.Rewrite
 
             var spellEvGraph = module.TypeGraphs.First(x => x.Name == "SpellEV");
             PullSpellEv(spellEvGraph);
+
+            //var lineageObj = module.TypeGraphs.First(x => x.Name == "LineageObj");
         }
 
-        private static SpellDefinition GetSpell(byte id)
+        public static SpellDefinition GetSpell(byte id)
         {
             if (id == 0)
                 return SpellDefinition.None;
@@ -36,54 +38,6 @@ namespace RogueLauncher.Rewrite
         }
 
         [Obfuscation(Exclude = true)]
-        private static string NewIcon(byte id)
-        {
-            return SpellDefinition.GetById(id).Icon;
-        }
-
-        [Obfuscation(Exclude = true)]
-        private static string NewToString(byte id)
-        {
-            return SpellDefinition.GetById(id).Name;
-        }
-
-        [Obfuscation(Exclude = true)]
-        private static string NewDescription(byte id)
-        {
-            return SpellDefinition.GetById(id).Description;
-        }
-
-        [Obfuscation(Exclude = true)]
-        private static float NewGetDamageMultiplier(byte id)
-        {
-            return SpellDefinition.GetById(id).DamageMultiplier;
-        }
-
-        [Obfuscation(Exclude = true)]
-        private static int NewGetRarity(byte id)
-        {
-            return SpellDefinition.GetById(id).Rarity;
-        }
-
-        [Obfuscation(Exclude = true)]
-        private static int NewGetManaCost(byte id)
-        {
-            return SpellDefinition.GetById(id).ManaCost;
-        }
-
-        [Obfuscation(Exclude = true)]
-        private static float NewGetXValue(byte id)
-        {
-            return SpellDefinition.GetById(id).MiscValue1;
-        }
-
-        [Obfuscation(Exclude = true)]
-        private static float NewGetYValue(byte id)
-        {
-            return SpellDefinition.GetById(id).MiscValue2;
-        }
-
-        [Obfuscation(Exclude = true)]
         private static RogueAPI.Projectiles.ProjectileInstance NewGetProjData(byte id, GameObj source)
         {
             return SpellDefinition.GetById(id).GetProjectileInstance(source);
@@ -94,25 +48,25 @@ namespace RogueLauncher.Rewrite
             //Should we even bother with the field values?
             //It is assumed that all switches are offset by -1
 
-            foreach (var field in spellType.Fields.Where(x => x.ConstantValue is byte))
+            foreach (var field in spellType.Fields.Where(x => x.ConstantValue is byte && !x.Name.StartsWith("Total")))
                 GetSpell((byte)field.ConstantValue).Name = field.Name;
 
             foreach (var method in spellType.Methods)
             {
                 if (method.Name == "ToString")
                 {
-                    ReadSwitches(method.InstructionList, 0);
-                    method.InstructionList = new InstructionList(Util.GetMethodInfo(() => NewToString(0)));
+                    Util.ReadSwitches<string>(method.InstructionList, (x, y, z) => GetSpell(x).DisplayName = y, (x, y, z) => { foreach (var c in SpellDefinition.All.Where(b => b.DisplayName == null)) c.DisplayName = y; });
+                    method.InstructionList = new InstructionList(new Func<byte, string>((x) => SpellDefinition.GetById(x).DisplayName));
                 }
                 else if (method.Name == "Description")
                 {
-                    ReadSwitches(method.InstructionList, 1);
-                    method.InstructionList = new InstructionList(Util.GetMethodInfo(() => NewDescription(0)));
+                    Util.ReadSwitches<string>(method.InstructionList, (x, y, z) => GetSpell(x).Description = y, (x, y, z) => { foreach (var c in SpellDefinition.All.Where(b => b.Description == null)) c.Description = y; });
+                    method.InstructionList = new InstructionList(new Func<byte, string>((x) => SpellDefinition.GetById(x).Description));
                 }
                 else if (method.Name == "Icon")
                 {
-                    ReadSwitches(method.InstructionList, 2);
-                    method.InstructionList = new InstructionList(Util.GetMethodInfo(() => NewIcon(0)));
+                    Util.ReadSwitches<string>(method.InstructionList, (x, y, z) => GetSpell(x).Icon = y, (x, y, z) => { foreach (var c in SpellDefinition.All.Where(b => b.Icon == null)) c.Icon = y; });
+                    method.InstructionList = new InstructionList(new Func<byte, string>((x) => SpellDefinition.GetById(x).Icon));
                 }
             }
 
@@ -126,28 +80,28 @@ namespace RogueLauncher.Rewrite
             {
                 if (m.Name == "GetDamageMultiplier")
                 {
-                    ReadSwitches(m.InstructionList, 3);
-                    m.InstructionList = new InstructionList(Util.GetMethodInfo(() => NewGetDamageMultiplier(0)));
+                    Util.ReadSwitches<float>(m.InstructionList, (x, y, z) => GetSpell(x).DamageMultiplier = y, (x, y, z) => { foreach (var c in SpellDefinition.All.Where(b => b.DamageMultiplier == 0)) c.DamageMultiplier = y; });
+                    m.InstructionList = new InstructionList(new Func<byte, float>((x) => SpellDefinition.GetById(x).DamageMultiplier));
                 }
                 else if (m.Name == "GetRarity")
                 {
-                    ReadSwitches(m.InstructionList, 4);
-                    m.InstructionList = new InstructionList(Util.GetMethodInfo(() => NewGetRarity(0)));
+                    Util.ReadSwitches<int>(m.InstructionList, (x, y, z) => GetSpell(x).Rarity = y, (x, y, z) => { foreach (var c in SpellDefinition.All.Where(b => b.Rarity == 0)) c.Rarity = y; });
+                    m.InstructionList = new InstructionList(new Func<byte, int>((x) => SpellDefinition.GetById(x).Rarity));
                 }
                 else if (m.Name == "GetManaCost")
                 {
-                    ReadSwitches(m.InstructionList, 5);
-                    m.InstructionList = new InstructionList(Util.GetMethodInfo(() => NewGetManaCost(0)));
+                    Util.ReadSwitches<int>(m.InstructionList, (x, y, z) => GetSpell(x).ManaCost = y, (x, y, z) => { foreach (var c in SpellDefinition.All.Where(b => b.ManaCost == 0)) c.ManaCost = y; });
+                    m.InstructionList = new InstructionList(new Func<byte, int>((x) => SpellDefinition.GetById(x).ManaCost));
                 }
                 else if (m.Name == "GetXValue")
                 {
-                    ReadSwitches(m.InstructionList, 6);
-                    m.InstructionList = new InstructionList(Util.GetMethodInfo(() => NewGetXValue(0)));
+                    Util.ReadSwitches<float>(m.InstructionList, (x, y, z) => GetSpell(x).MiscValue1 = y, (x, y, z) => { foreach (var c in SpellDefinition.All.Where(b => b.MiscValue1 == 0)) c.MiscValue1 = y; });
+                    m.InstructionList = new InstructionList(new Func<byte, float>((x) => SpellDefinition.GetById(x).MiscValue1));
                 }
                 else if (m.Name == "GetYValue")
                 {
-                    ReadSwitches(m.InstructionList, 7);
-                    m.InstructionList = new InstructionList(Util.GetMethodInfo(() => NewGetYValue(0)));
+                    Util.ReadSwitches<float>(m.InstructionList, (x, y, z) => GetSpell(x).MiscValue2 = y, (x, y, z) => { foreach (var c in SpellDefinition.All.Where(b => b.MiscValue2 == 0)) c.MiscValue2 = y; });
+                    m.InstructionList = new InstructionList(new Func<byte, float>((x) => SpellDefinition.GetById(x).MiscValue2));
                 }
                 else if (m.Name == "GetProjData")
                 {
@@ -170,10 +124,10 @@ namespace RogueLauncher.Rewrite
             var instr = projMethod.InstructionList;
             var ix = 0;
             var count = instr.Count;
-            while(ix < count)
+            while (ix < count)
             {
                 var i = instr[ix];
-                if(i is MethodInstruction)
+                if (i is MethodInstruction)
                 {
                     var mi = i as MethodInstruction;
                     if (mi.Operand.IsConstructor && mi.Operand.DeclaringType.Name == "ProjectileData")
@@ -184,10 +138,10 @@ namespace RogueLauncher.Rewrite
                         continue;
                     }
                 }
-                else if(i is FieldInstruction)
+                else if (i is FieldInstruction)
                 {
                     var fi = i as FieldInstruction;
-                    if(fi.ILCode == ILCode.Stfld && fi.Operand.Name == "Target")
+                    if (fi.ILCode == ILCode.Stfld && fi.Operand.Name == "Target")
                     {
                         instr.RemoveAt(ix--);
                         instr.RemoveAt(ix--);
@@ -214,78 +168,5 @@ namespace RogueLauncher.Rewrite
             projMethod.Source = null;
         }
 
-        private static void SetField(byte id, int type, object value)
-        {
-            var def = GetSpell(id);
-            switch (type)
-            {
-                case 0: def.DisplayName = (string)value; break;
-                case 1: def.Description = (string)value; break;
-                case 2: def.Icon = (string)value; break;
-                case 3: def.DamageMultiplier = (float)value; break;
-                case 4: def.Rarity = Convert.ToInt32(value); break;
-                case 5: def.ManaCost = Convert.ToInt32(value); break;
-                case 6: def.MiscValue1 = (float)value; break;
-                case 7: def.MiscValue2 = (float)value; break;
-            }
-        }
-
-
-        private static object ParseOperand(InstructionList instr, InstructionBase i, int type)
-        {
-            object value = i.RawOperand;
-
-            if (type == 1)
-            {
-                string accum = (string)value;
-                var ix3 = instr.IndexOf(i) + 1;
-                while (true)
-                {
-                    var i2 = instr[ix3++];
-                    if (i2 is Int8Instruction || i2 is StringInstruction)
-                        accum += i2.RawOperand;
-                    else if (i2.ILCode == ILCode.Ret)
-                        break;
-                }
-                value = accum;
-            }
-
-            return value;
-        }
-
-        private static void ReadSwitches(InstructionList instr, int type)
-        {
-            bool first = true;
-            int ix = 0, count = instr.Count, ix2;
-
-            while (ix < count)
-            {
-                var i1 = instr[ix++];
-                if (i1 is SwitchInstruction)
-                {
-                    //Read string values from switch statement
-                    var switchJumps = ((SwitchInstruction)i1).JumpToInstructions;
-                    var jCount = switchJumps.Count;
-                    ix2 = 0;
-                    while (ix2 < jCount)
-                        SetField((byte)(ix2 + 1), type, ParseOperand(instr, switchJumps[ix2++], type));
-                }
-                else if (i1 is LabelInstruction)
-                {
-                    if (first)
-                    {
-                        ix2 = ((Int8Instruction)instr[ix - 2]).Operand;
-                        first = false;
-                    }
-                    else
-                        ix2 = 0;
-
-                    SetField((byte)ix2, type, ParseOperand(instr, ((LabelInstruction)i1).JumpToInstruction, type));
-
-                    if (ix2 == 0)
-                        break;
-                }
-            }
-        }
     }
 }

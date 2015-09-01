@@ -16,11 +16,25 @@ namespace AssemblyTranslator.IL
         {
             if (_opCode.OperandType == OperandType.ShortInlineVar)
                 _index = data[offset++];
-            else
+            else if (_opCode.OperandType == OperandType.InlineVar)
             {
                 _index = BitConverter.ToUInt16(data, offset);
                 offset += 2;
             }
+            else
+                switch (ILCode)
+                {
+                    case ILCode.Stloc_0:
+                    case ILCode.Ldloc_0: _index = 0; break;
+                    case ILCode.Stloc_1:
+                    case ILCode.Ldloc_1: _index = 1; break;
+                    case ILCode.Stloc_2:
+                    case ILCode.Ldloc_2: _index = 2; break;
+                    case ILCode.Stloc_3:
+                    case ILCode.Ldloc_3: _index = 3; break;
+                    default:
+                        throw new InvalidOperationException();
+                }
         }
         internal override void ParseOperand() { _localVar = _list._locals[_index]; }
         internal override void EmitInstruction(ILGenerator generator) { generator.Emit(_opCode, _operand); }
@@ -29,7 +43,7 @@ namespace AssemblyTranslator.IL
         {
             _index = (ushort)_list._locals.IndexOf(_localVar);
             _operand = _list._locals[_index].LocalBuilder;
-            var type = _index < 4 ? _index : _index < 0x100 ? 4 : 5;
+            var type = _index < 4 ? _index : _index <= byte.MaxValue ? 4 : 5;
 
             switch (ILCode)
             {

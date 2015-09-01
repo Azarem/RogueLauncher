@@ -1,14 +1,17 @@
 ﻿using AssemblyTranslator;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace RogueLauncher
 {
     public class Program : MarshalByRefObject
     {
-        internal static int SteamAppId;
+        //internal static int SteamAppId;
 
         static Program()
         {
@@ -21,7 +24,34 @@ namespace RogueLauncher
 
         static void Main(string[] args)
         {
-            ((EntryPointDelegate)Assembly.Load(CreateAssembly()).EntryPoint.CreateDelegate(typeof(EntryPointDelegate)))(new string[] { });
+            bool started = EnsureSteamStarted();
+
+            var asmBytes = CreateAssembly();
+
+            if (!started && !WaitForSteamStart())
+                MessageBox.Show("Unable to start the Steam client!");
+            else
+                ((EntryPointDelegate)Assembly.Load(asmBytes).EntryPoint.CreateDelegate(typeof(EntryPointDelegate)))(new string[] { });
+        }
+
+        public static bool EnsureSteamStarted()
+        {
+            if (Process.GetProcessesByName("Steam").Length == 0)
+            {
+                Process.Start(new ProcessStartInfo("..\\..\\..\\Steam.exe"));
+                return false;
+            }
+            return true;
+        }
+
+        public static bool WaitForSteamStart(int timeout = 20000)
+        {
+            Process[] proc;
+            var timestamp = Environment.TickCount + timeout;
+            while (((proc = Process.GetProcessesByName("Steam")).Length == 0 || proc[0].MainWindowHandle == IntPtr.Zero) && Environment.TickCount < timestamp)
+                Thread.Sleep(1000);
+
+            return Environment.TickCount < timestamp;
         }
 
         //Used as a remote endpoint for creating the assembly in a workspace app domain
@@ -36,6 +66,7 @@ namespace RogueLauncher
 
             Rewrite.Program.Process(manager);
             Rewrite.SpellSystem.Process(manager);
+            Rewrite.ClassSystem.Process(manager);
             Rewrite.Game.Process(manager);
 
             manager.ReplaceType("RogueCastle.ProjectileData", typeof(RogueAPI.Projectiles.ProjectileInstance));

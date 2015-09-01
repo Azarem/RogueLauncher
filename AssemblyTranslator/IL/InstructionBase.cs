@@ -56,6 +56,7 @@ namespace AssemblyTranslator.IL
             {
                 switch (ILCode)
                 {
+                    case ILCode.Ldc_I4_M1: return -1;
                     case ILCode.Ldc_I4_0: return 0;
                     case ILCode.Ldc_I4_1: return 1;
                     case ILCode.Ldc_I4_2: return 2;
@@ -160,7 +161,44 @@ namespace AssemblyTranslator.IL
                 case OperandType.InlineI: inst = new Int32Instruction(); break;
                 case OperandType.InlineI8: inst = new Int64Instruction(); break;
                 case OperandType.InlineMethod: inst = new MethodInstruction(); break;
-                case OperandType.InlineNone: inst = new InstructionBase(); break;
+                case OperandType.InlineNone:
+                    switch ((ILCode)op)
+                    {
+                        case ILCode.Ldarg_0:
+                        case ILCode.Ldarg_1:
+                        case ILCode.Ldarg_2:
+                        case ILCode.Ldarg_3:
+                            inst = new ParameterInstruction();
+                            break;
+
+                        case ILCode.Stloc_0:
+                        case ILCode.Ldloc_0:
+                        case ILCode.Stloc_1:
+                        case ILCode.Ldloc_1:
+                        case ILCode.Stloc_2:
+                        case ILCode.Ldloc_2:
+                        case ILCode.Stloc_3:
+                        case ILCode.Ldloc_3:
+                            inst = new LocalInstruction();
+                            break;
+
+                        case ILCode.Ldc_I4_0:
+                        case ILCode.Ldc_I4_1:
+                        case ILCode.Ldc_I4_2:
+                        case ILCode.Ldc_I4_3:
+                        case ILCode.Ldc_I4_4:
+                        case ILCode.Ldc_I4_5:
+                        case ILCode.Ldc_I4_6:
+                        case ILCode.Ldc_I4_7:
+                        case ILCode.Ldc_I4_8:
+                        case ILCode.Ldc_I4_M1:
+                            inst = new Int32Instruction();
+                            break;
+
+                        default:
+                            inst = new InstructionBase();
+                            break;
+                    } break;
                 case OperandType.InlineR: inst = new DoubleInstruction(); break;
                 case OperandType.InlineSig: inst = new SignatureInstruction(); break;
                 case OperandType.InlineString: inst = new StringInstruction(); break;

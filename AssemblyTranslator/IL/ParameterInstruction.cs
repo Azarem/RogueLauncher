@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AssemblyTranslator.IL
 {
@@ -13,16 +11,26 @@ namespace AssemblyTranslator.IL
         {
             if (_opCode.OperandType == OperandType.ShortInlineVar)
                 _operand = data[offset++];
-            else
+            else if (_opCode.OperandType == OperandType.InlineVar)
             {
                 _operand = BitConverter.ToUInt16(data, offset);
                 offset += 2;
             }
+            else
+                switch (ILCode)
+                {
+                    case ILCode.Ldarg_0: _operand = 0; break;
+                    case ILCode.Ldarg_1: _operand = 1; break;
+                    case ILCode.Ldarg_2: _operand = 2; break;
+                    case ILCode.Ldarg_3: _operand = 3; break;
+                    default:
+                        throw new InvalidOperationException();
+                }
         }
 
         internal override void OptimizeInstruction()
         {
-            var type = _operand < 4 ? _operand : _operand < 0x100 ? 4 : 5;
+            var type = _operand < 4 ? _operand : _operand <= byte.MaxValue ? 4 : 5;
             switch (ILCode)
             {
                 case ILCode.Starg: if (type != 5) _opCode = OpCodes.Starg_S; break;
@@ -58,7 +66,7 @@ namespace AssemblyTranslator.IL
 
             if (_opCode.OperandType == OperandType.ShortInlineVar)
                 *ptr++ = (byte)_operand;
-            else
+            else if (_opCode.OperandType == OperandType.InlineVar)
             {
                 *(ushort*)ptr = _operand;
                 ptr += 2;
