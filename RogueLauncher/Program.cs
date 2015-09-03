@@ -1,4 +1,5 @@
 ﻿using AssemblyTranslator;
+using AssemblyTranslator.IL;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -64,10 +65,18 @@ namespace RogueLauncher
 #endif
             GraphManager manager = new GraphManager(assemblyFileName);
 
-            Rewrite.Program.Process(manager);
-            Rewrite.SpellSystem.Process(manager);
-            Rewrite.ClassSystem.Process(manager);
-            Rewrite.Game.Process(manager);
+            //Pull out Steam app ID
+            var appId = (from x in manager.Graph.Modules
+                         from y in x.TypeGraphs
+                         where y.FullName == "RogueCastle.Program"
+                         from z in y.Methods
+                         where z.Name == "Main"
+                         from i in z.InstructionList
+                         where i is MethodInstruction && ((MethodInstruction)i).Operand.Name == "init"
+                         select z.InstructionList[z.InstructionList.IndexOf(i) - 1].RawOperand.ToString()).FirstOrDefault();
+
+            if (appId != null)
+                Environment.SetEnvironmentVariable("SteamAppId", appId);
 
             manager.ReplaceType("RogueCastle.ProjectileData", typeof(RogueAPI.Projectiles.ProjectileInstance));
 

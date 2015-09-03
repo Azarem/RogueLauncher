@@ -76,6 +76,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Graphs\PropertyGraph.cs" />
     <Compile Include="Graphs\TypeGraph.cs" />
+    <Compile Include="RewriteAttribute.cs" />
+    <Compile Include="RewriteAction.cs" />
+    <Compile Include="StubAction.cs" />
     <Compile Include="Util.cs" />
   </ItemGroup>
   <ItemGroup />

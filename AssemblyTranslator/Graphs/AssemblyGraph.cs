@@ -63,6 +63,7 @@ namespace AssemblyTranslator.Graphs
             foreach (var m in _modules)
                 m.DeclareMembers(translator);
 
+            translator.ProcessRewriters();
         }
 
         private void DefineMembers(GraphManager translator)

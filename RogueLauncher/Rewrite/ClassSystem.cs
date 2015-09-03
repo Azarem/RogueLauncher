@@ -3,118 +3,117 @@ using AssemblyTranslator.Graphs;
 using AssemblyTranslator.IL;
 using RogueAPI.Classes;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RogueLauncher.Rewrite
 {
     public class ClassSystem
     {
-        public static void Process(GraphManager manager)
+        public static void ChangeFieldCall(MethodGraph sourceGraph, MethodGraph newGraph)
         {
-            var module = manager.Graph.Modules.First();
+            sourceGraph.Attributes = MethodAttributes.Public | MethodAttributes.Static;
+            sourceGraph.CallingConvention = CallingConventions.Standard;
 
-            var classType = module.TypeGraphs.First(x => x.Name == "ClassType");
-            PullClassType(classType);
+            newGraph.Parameters[1].DeclaringObject = sourceGraph;
+            newGraph.CallingConvention = CallingConventions.Standard | CallingConventions.HasThis;
 
-            var playerObj = module.TypeGraphs.First(x => x.Name == "PlayerObj");
-            PullPlayerObj(playerObj);
+            var instr = sourceGraph.InstructionList;
+            instr.Locals.Clear();
 
-            var cls = ClassDefinition.All;
-        }
+            instr.RemoveAt(0);
+            instr.RemoveAt(0);
+            instr.RemoveAt(0);
 
-        public static ClassDefinition GetClass(byte id)
-        {
-            //if (id == 0)
-            //    return ClassDefinition.None;
-
-            var def = ClassDefinition.GetById(id);
-
-            if (def == null)
-                def = ClassDefinition.Register(id);
-
-            return def;
-        }
-
-        private static void PullPlayerObj(TypeGraph playerObj)
-        {
-            var method = playerObj.Methods.First(x => x.Name == "get_ClassDamageGivenMultiplier");
-            //var oldMethod = new MethodGraph(method.Source, playerObj);
-            //oldMethod.Name = "_" + oldMethod.Name;
-            //oldMethod.Source = null;
-
-            Util.ReadSwitches<float>(method.InstructionList, (x, y, z) => GetClass(x).PhysicalDamageMultiplier = y, (x, y, z) => { foreach (var c in ClassDefinition.All.Where(b => b.PhysicalDamageMultiplier == 0)) c.PhysicalDamageMultiplier = y; });
-            ChangeFieldCall(method, Util.GetMethodInfo<ClassDefinition, float>(x => x.PhysicalDamageMultiplier));
-
-            method = playerObj.Methods.First(x => x.Name == "get_ClassDamageTakenMultiplier");
-            Util.ReadSwitches<float>(method.InstructionList, (x, y, z) => GetClass(x).DamageTakenMultiplier = y, (x, y, z) => { foreach (var c in ClassDefinition.All.Where(b => b.DamageTakenMultiplier == 0)) c.DamageTakenMultiplier = y; });
-            ChangeFieldCall(method, Util.GetMethodInfo<ClassDefinition, float>(x => x.DamageTakenMultiplier));
-
-            method = playerObj.Methods.First(x => x.Name == "get_ClassMagicDamageGivenMultiplier");
-            Util.ReadSwitches<float>(method.InstructionList, (x, y, z) => GetClass(x).MagicDamageMultiplier = y, (x, y, z) => { foreach (var c in ClassDefinition.All.Where(b => b.MagicDamageMultiplier == 0)) c.MagicDamageMultiplier = y; });
-            ChangeFieldCall(method, Util.GetMethodInfo<ClassDefinition, float>(x => x.MagicDamageMultiplier));
-
-            method = playerObj.Methods.First(x => x.Name == "get_ClassMoveSpeedMultiplier");
-            Util.ReadSwitches<float>(method.InstructionList, (x, y, z) => GetClass(x).MoveSpeedMultiplier = y, (x, y, z) => { foreach (var c in ClassDefinition.All.Where(b => b.MoveSpeedMultiplier == 0)) c.MoveSpeedMultiplier = y; });
-            ChangeFieldCall(method, Util.GetMethodInfo<ClassDefinition, float>(x => x.MoveSpeedMultiplier));
-
-            method = playerObj.Methods.First(x => x.Name == "get_ClassTotalHPMultiplier");
-            Util.ReadSwitches<float>(method.InstructionList, (x, y, z) => GetClass(x).HealthMultiplier = y, (x, y, z) => { foreach (var c in ClassDefinition.All.Where(b => b.HealthMultiplier == 0)) c.HealthMultiplier = y; });
-            ChangeFieldCall(method, Util.GetMethodInfo<ClassDefinition, float>(x => x.HealthMultiplier));
-
-            method = playerObj.Methods.First(x => x.Name == "get_ClassTotalMPMultiplier");
-            Util.ReadSwitches<float>(method.InstructionList, (x, y, z) => GetClass(x).ManaMultiplier = y, (x, y, z) => { foreach (var c in ClassDefinition.All.Where(b => b.ManaMultiplier == 0)) c.ManaMultiplier = y; });
-            ChangeFieldCall(method, Util.GetMethodInfo<ClassDefinition, float>(x => x.ManaMultiplier));
-        }
-
-        private static void ChangeFieldCall(MethodGraph graph, MethodBase info)
-        {
-            var l = graph.InstructionList;
-            var instr = new InstructionList();
-            instr.Add(l[0]);
-            instr.Add(l[1]);
-            instr.Add(new MethodInstruction() { OpCode = OpCodes.Call, Operand = Util.GetMethodInfo(() => ClassDefinition.GetById(0)) });
-            instr.Add(new MethodInstruction() { OpCode = OpCodes.Callvirt, Operand = info });
-            instr.Add(new InstructionBase() { OpCode = OpCodes.Ret });
-            graph.InstructionList = instr;
-        }
-
-        private static void PullClassType(TypeGraph classType)
-        {
-            foreach (var field in classType.Fields.Where(x => x.ConstantValue is byte && !x.Name.StartsWith("Total")))
-                GetClass((byte)field.ConstantValue).Name = field.Name;
-
-            var spellList = new Dictionary<byte, byte[]>();
-
-            foreach (var m in classType.Methods)
+            int ix = 0, count = instr.Count;
+            while (ix < count)
             {
-                if (m.Name == "Description")
-                {
-                    Util.ReadSwitches<string>(m.InstructionList, (x, y, z) => GetClass(x).Description = y, (x, y, z) => { foreach (var c in ClassDefinition.All.Where(b => b.Description == null)) c.Description = y; });
-                    m.InstructionList = new InstructionList(new Func<byte, string>(x => ClassDefinition.GetById(x).Description));
-                }
-                else if (m.Name == "ProfileCardDescription")
-                {
-                    Util.ReadSwitches<string>(m.InstructionList, (x, y, z) => GetClass(x).ProfileCardDescription = y, (x, y, z) => { foreach (var c in ClassDefinition.All.Where(b => b.ProfileCardDescription == null)) c.Description = y; });
-                    m.InstructionList = new InstructionList(new Func<byte, string>(x => ClassDefinition.GetById(x).ProfileCardDescription));
-                }
-                else if (m.Name == "ToString")
-                {
-                    Util.ReadSwitches<string>(m.InstructionList, (x, y, z) => { if (z)  GetClass(x).FemaleDisplayName = y; else GetClass(x).DisplayName = y; }, (x, y, z) => { foreach (var c in ClassDefinition.All.Where(b => b.DisplayName == null)) c.DisplayName = y; });
-                    m.InstructionList = new InstructionList(new Func<byte, bool, string>((x, y) => ClassDefinition.GetById(x).GetDisplayName(y)));
-                }
-                else if (m.Name == "GetSpellList")
-                {
-                    Util.ReadSwitches<byte[]>(m.InstructionList, (x, y, z) => { var c = GetClass(x); foreach (var b in y) c.SpellList.Add(RogueAPI.Spells.SpellDefinition.GetById(b)); }, (x, y, z) => { });
-                    m.InstructionList = new InstructionList(new Func<byte, byte[]>(x => ClassDefinition.GetById(x).SpellByteArray));
-                }
-
+                var i = instr[ix++];
+                if (i.ILCode == ILCode.Ldloc_0)
+                    i.Replace(new ParameterInstruction() { OpCode = OpCodes.Ldarg_0 });
             }
+
         }
 
+
+        [Obfuscation(Exclude = true)]
+        [Rewrite("RogueCastle.PlayerObj", "get_ClassDamageGivenMultiplier", action: RewriteAction.Swap, oldName: "GetClassDamageGivenMultiplier", stubAction: StubAction.UseOld, contentHandler: "ChangeFieldCall")]
+        public static float ClassDamageGivenMultiplier(byte id)
+        {
+            return ClassDefinition.GetById(PlayerStatsStub.get_Class()).PhysicalDamageMultiplier;
+        }
+
+        [Obfuscation(Exclude = true)]
+        [Rewrite("RogueCastle.PlayerObj", "get_ClassDamageTakenMultiplier", action: RewriteAction.Swap, oldName: "GetClassDamageTakenMultiplier", stubAction: StubAction.UseOld, contentHandler: "ChangeFieldCall")]
+        public static float ClassDamageTakenMultiplier(byte id)
+        {
+            return ClassDefinition.GetById(PlayerStatsStub.get_Class()).DamageTakenMultiplier;
+        }
+
+        [Obfuscation(Exclude = true)]
+        [Rewrite("RogueCastle.PlayerObj", "get_ClassMagicDamageGivenMultiplier", action: RewriteAction.Swap, oldName: "GetClassMagicDamageGivenMultiplier", stubAction: StubAction.UseOld, contentHandler: "ChangeFieldCall")]
+        public static float ClassMagicDamageGivenMultiplier(byte id)
+        {
+            return ClassDefinition.GetById(PlayerStatsStub.get_Class()).MagicDamageMultiplier;
+        }
+        
+        [Obfuscation(Exclude = true)]
+        [Rewrite("RogueCastle.PlayerObj", "get_ClassMoveSpeedMultiplier", action: RewriteAction.Swap, oldName: "GetClassMoveSpeedMultiplier", stubAction: StubAction.UseOld, contentHandler: "ChangeFieldCall")]
+        public static float ClassMoveSpeedMultiplier(byte id)
+        {
+            return ClassDefinition.GetById(PlayerStatsStub.get_Class()).MoveSpeedMultiplier;
+        }
+
+        [Obfuscation(Exclude = true)]
+        [Rewrite("RogueCastle.PlayerObj", "get_ClassTotalHPMultiplier", action: RewriteAction.Swap, oldName: "GetClassTotalHPMultiplier", stubAction: StubAction.UseOld, contentHandler: "ChangeFieldCall")]
+        public static float ClassTotalHPMultiplier(byte id)
+        {
+            return ClassDefinition.GetById(PlayerStatsStub.get_Class()).HealthMultiplier;
+        }
+
+        [Obfuscation(Exclude = true)]
+        [Rewrite("RogueCastle.PlayerObj", "get_ClassTotalMPMultiplier", action: RewriteAction.Swap, oldName: "GetClassTotalMPMultiplier", stubAction: StubAction.UseOld, contentHandler: "ChangeFieldCall")]
+        public static float ClassTotalMPMultiplier(byte id)
+        {
+            return ClassDefinition.GetById(PlayerStatsStub.get_Class()).ManaMultiplier;
+        }
+
+        [Obfuscation(Exclude = true)]
+        [Rewrite("RogueCastle.ClassType", "Description", action: RewriteAction.Swap, newName: "_Description", stubAction: StubAction.UseOld)]
+        public static string Description(byte id)
+        {
+            return ClassDefinition.GetById(id).Description;
+        }
+
+        [Obfuscation(Exclude = true)]
+        [Rewrite("RogueCastle.ClassType", "ProfileCardDescription", action: RewriteAction.Swap, newName: "_ProfileCardDescription", stubAction: StubAction.UseOld)]
+        public static string ProfileCardDescription(byte id)
+        {
+            return ClassDefinition.GetById(id).ProfileCardDescription;
+        }
+
+        [Obfuscation(Exclude = true)]
+        [Rewrite("RogueCastle.ClassType", "ToString", action: RewriteAction.Swap, newName: "_ToString", stubAction: StubAction.UseOld)]
+        public static string ToString(byte id, bool isFemale)
+        {
+            return ClassDefinition.GetById(id).GetDisplayName(isFemale);
+        }
+
+        [Obfuscation(Exclude = true)]
+        [Rewrite("RogueCastle.ClassType", "GetSpellList", action: RewriteAction.Swap, newName: "_GetSpellList", stubAction: StubAction.UseOld)]
+        public static byte[] GetSpellList(byte id)
+        {
+            return ClassDefinition.GetById(id).SpellByteArray;
+        }
+
+        [Rewrite("RogueCastle.Game", "PlayerStats", RewriteAction.None)]
+        public static PlayerStatsStubClass PlayerStatsStub;
+
+        public class PlayerStatsStubClass
+        {
+            [Rewrite("RogueCastle.PlayerStats", "get_Class", RewriteAction.None)]
+            public byte get_Class() { return 0; }
+        }
     }
 }

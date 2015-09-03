@@ -18,7 +18,7 @@ namespace AssemblyTranslator.Graphs
         public CallingConventions CallingConvention { get { return _callingConvention; } set { _callingConvention = value; } }
         public GraphList<ParameterGraph, MethodGraph> Parameters { get { return _parameters; } }
 
-        public MethodGraph() : this(null) { }
+        public MethodGraph() : this((MethodBase)null) { }
         public MethodGraph(MethodBase method, TypeGraph parentGraph = null)
             : base(method, parentGraph)
         {
@@ -40,6 +40,28 @@ namespace AssemblyTranslator.Graphs
 
                 _instructionList = new InstructionList(_sourceObject);
             }
+        }
+        public MethodGraph(Delegate expression, TypeGraph parentGraph = null) : this(expression.Method, parentGraph) { }
+        public MethodGraph(System.Linq.Expressions.LambdaExpression expression, TypeGraph parentGraph = null) : this(expression.Compile().Method, parentGraph) { }
+
+        public MethodGraph SwitchImpl(Delegate expression, string newName = null, string oldName = null) { return SwitchImpl(expression.Method, newName, oldName); }
+        public MethodGraph SwitchImpl(System.Linq.Expressions.LambdaExpression expression, string newName = null, string oldName = null) { return SwitchImpl(expression.Compile().Method, newName, oldName); }
+        public MethodGraph SwitchImpl(MethodBase method, string newName = null, string oldName = null)
+        {
+            var newMethod = new MethodGraph(method, this.DeclaringObject)
+            {
+                Name = newName ?? this.Name,
+                Source = this.Source,
+                Attributes = this.Attributes
+            };
+
+            if (oldName != null)
+                this.Name = oldName;
+
+            this.Attributes &= ~MethodAttributes.Virtual;
+            this.Source = null;
+
+            return newMethod;
         }
 
         internal void DeclareMember(GraphManager translator)

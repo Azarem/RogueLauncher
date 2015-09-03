@@ -1,6 +1,4 @@
 ﻿using AssemblyTranslator;
-using AssemblyTranslator.Graphs;
-using AssemblyTranslator.IL;
 using RogueAPI.Plugins;
 using System;
 using System.Linq;
@@ -10,90 +8,61 @@ namespace RogueLauncher.Rewrite
 {
     internal class Game
     {
-        public static void Process(GraphManager manager)
-        {
-            var module = manager.Graph.Modules.First();
-            var gameGraph = module.TypeGraphs.First(x => x.Name == "Game");
-
-            var initMethod = gameGraph.Methods.First(x => x.Name == "Initialize");
-
-            var newMethod = new MethodGraph(Util.GetMethodInfo<Game>(x => x.NewInitialize()), initMethod.DeclaringObject);
-
-            newMethod.Name = "Initialize";
-            newMethod.Source = initMethod.Source;
-            newMethod.Attributes = initMethod.Attributes;
-
-            var instr = newMethod.InstructionList;
-
-            //var stub = Util.GetMethodInfo(() => GetProjDataStub(0));
-            //var initStub = Util.GetMethodInfo<Game>(x => x.OldInitialize());
-
-            //foreach (var i in instr)
-            //{
-            //    if (i is MethodInstruction)
-            //    {
-            //        var mi = i as MethodInstruction;
-            //        if (mi.Operand == stub)
-            //            mi.GraphOperand = module.TypeGraphs.First(x => x.Name == "SpellEV").Methods.First(x => x.Name == "_GetProjData");
-            //        else if (mi.Operand == initStub)
-            //            mi.GraphOperand = initMethod;
-            //    }
-            //}
-
-            var spellEv = module.TypeGraphs.First(x => x.Name == "SpellEV");
-            var playerObj = module.TypeGraphs.First(x => x.Name == "PlayerObj");
-
-            ReplaceStubs(instr,
-                new Tuple<MethodBase, MethodGraph>(Util.GetMethodInfo(() => GetProjDataStub(0)), spellEv.Methods.First(x => x.Name == "_GetProjData")),
-                new Tuple<MethodBase, MethodGraph>(Util.GetMethodInfo<Game>(x => x.OldInitialize()), initMethod)
-                //new Tuple<MethodBase, MethodGraph>(Util.GetMethodInfo(() => GetClassPhysStub(0)), playerObj.Methods.First(x => x.Name == "_get_ClassDamageGivenMultiplier"))
-            );
-
-            initMethod.Name = "_Initialize";
-            initMethod.Attributes &= ~MethodAttributes.Virtual;
-            initMethod.Source = null;
-        }
-
-        private static void ReplaceStubs(InstructionList instr, params Tuple<MethodBase, MethodGraph>[] repl)
-        {
-            foreach (var i in instr)
-            {
-                if (i is MethodInstruction)
-                {
-                    var mi = i as MethodInstruction;
-                    var newM = repl.FirstOrDefault(x => x.Item1 == mi.Operand);
-
-                    if (newM != null)
-                        mi.GraphOperand = newM.Item2;
-                }
-            }
-        }
-
-        protected virtual void OldInitialize() { }
-
-        private static RogueAPI.Projectiles.ProjectileInstance GetProjDataStub(byte id) { return null; }
-        private static string GetSpellNameStub(byte id) { return null; }
-        private static string GetSpellDescStub(byte id) { return null; }
-        private static float GetClassPhysStub(byte id) { return 0; }
-
         [Obfuscation(Exclude = true)]
+        [Rewrite("RogueCastle.Game", "Initialize", RewriteAction.Swap, oldName: "_Initialize")]
         protected virtual void NewInitialize()
         {
-            foreach (var s in RogueAPI.Spells.SpellDefinition.All)
+            foreach (var f in Type.GetType("RogueCastle.SpellType").GetFields())
             {
-                s.Projectile = GetProjDataStub(s.SpellId);
-                //s.DisplayName = GetSpellNameStub(s.SpellId);
-                //s.Description = GetSpellDescStub(s.SpellId);
+                var name = f.Name;
+                if (name.StartsWith("Total"))
+                    continue;
+
+                byte id = (byte)f.GetRawConstantValue();
+                RogueAPI.Spells.SpellDefinition.Register(new RogueAPI.Spells.SpellDefinition(id)
+                {
+                    Name = name,
+                    Projectile = SpellSystem.GetProjData(id, null),
+                    DamageMultiplier = SpellSystem.GetDamageMultiplier(id),
+                    Rarity = SpellSystem.GetRarity(id),
+                    ManaCost = SpellSystem.GetManaCost(id),
+                    MiscValue1 = SpellSystem.GetXValue(id),
+                    MiscValue2 = SpellSystem.GetYValue(id),
+                    DisplayName = SpellSystem.ToString(id),
+                    Icon = SpellSystem.Icon(id),
+                    Description = SpellSystem.Description(id)
+                });
             }
 
-            //foreach(var c in RogueAPI.Classes.ClassDefinition.All)
-            //{
-            //    c.PhysicalDamageMultiplier = GetClassPhysStub(c.ClassId);
-            //}
+            foreach (var f in Type.GetType("RogueCastle.ClassType").GetFields())
+            {
+                var name = f.Name;
+                if (name.StartsWith("Total"))
+                    continue;
+
+                byte id = (byte)f.GetRawConstantValue();
+                var cls = RogueAPI.Classes.ClassDefinition.Register(new RogueAPI.Classes.ClassDefinition(id)
+                {
+                    Name = name,
+                    Description = ClassSystem.Description(id),
+                    ProfileCardDescription = ClassSystem.ProfileCardDescription(id),
+                    DisplayName = ClassSystem.ToString(id, false),
+                    FemaleDisplayName = ClassSystem.ToString(id, true),
+                    DamageTakenMultiplier = ClassSystem.ClassDamageTakenMultiplier(id),
+                    HealthMultiplier = ClassSystem.ClassTotalHPMultiplier(id),
+                    ManaMultiplier = ClassSystem.ClassTotalMPMultiplier(id),
+                    MagicDamageMultiplier = ClassSystem.ClassMagicDamageGivenMultiplier(id),
+                    MoveSpeedMultiplier = ClassSystem.ClassMoveSpeedMultiplier(id),
+                    PhysicalDamageMultiplier = ClassSystem.ClassDamageGivenMultiplier(id)
+                });
+
+                foreach (var spellId in ClassSystem.GetSpellList(id))
+                    cls.SpellList.Add(RogueAPI.Spells.SpellDefinition.GetById(spellId));
+            }
 
             PluginInitializer.Initialize();
 
-            OldInitialize();
+            NewInitialize();
         }
     }
 

@@ -28,7 +28,7 @@ namespace AssemblyTranslator.Graphs
 
         protected void SetAttributeData(IEnumerable<CustomAttributeData> attributes)
         {
-            _customAttributes.AddRange(attributes.Select(x => new CustomAttributeGraph(x)));
+            _customAttributes.AddRange(attributes.Where(x => x.AttributeType != typeof(RewriteAttribute)).Select(x => new CustomAttributeGraph(x)));
         }
 
 

@@ -20,6 +20,7 @@ namespace AssemblyTranslator
         private Assembly sourceAssembly;
         internal ModuleBuilder CurrentModuleBuilder;
         private Assembly _callingAssembly;
+        private Assembly rewriteAssembly;
         //private Module currentModule;
         //private Assembly asm;
 
@@ -56,8 +57,9 @@ namespace AssemblyTranslator
             _graph.AssemblyName.Name = newName;
 
             //Process rewriters
-            //var entryAsm = Assembly.GetExecutingAssembly();
-            //ProcessRewriters(entryAsm);
+            rewriteAssembly = Assembly.GetCallingAssembly();
+
+            ProcessReplacements();
 
             //Attach extenders
             //ProcessExtenders(entryAsm);
@@ -125,16 +127,77 @@ namespace AssemblyTranslator
             return outBytes;
         }
 
-        private void ProcessRewriters(Assembly asm)
+        internal void ProcessReplacements()
         {
-            foreach (var t in asm.GetTypes().Where(x => x.Namespace != null && x.Namespace.StartsWith("Rewrite.")))
+            foreach (var t in rewriteAssembly.GetTypes())
             {
-                var name = t.FullName.Substring(8);
-                var graph = _graph.Modules.SelectMany(x => x.TypeGraphs.Where(y => y.Source.FullName == name)).FirstOrDefault();
-                if (graph == null)
-                    continue;
+                var repl = t.GetCustomAttribute<RewriteAttribute>(false);
+                if (repl != null && repl.action == RewriteAction.Replace)
+                {
+                    var target = (from x in Graph.Modules
+                                  from y in x.TypeGraphs
+                                  where y.FullName == repl.typeName
+                                  select y).Single();
 
-                t.GetMethod("Rewrite").Invoke(null, new object[] { graph });
+                    target._replacementType = t;
+                }
+
+                foreach (var m in t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
+                {
+                    var mRep = m.GetCustomAttribute<RewriteAttribute>();
+                    if (mRep != null && mRep.action != RewriteAction.None)
+                    {
+                        var target = (from x in Graph.Modules
+                                      from y in x.TypeGraphs
+                                      where y.FullName == mRep.typeName
+                                      select y.Methods.First(z => z.Name == mRep.targetName)).Single();
+
+                        var newTarget = target.SwitchImpl(m, mRep.newName, mRep.oldName);
+                        if (mRep.action == RewriteAction.Replace)
+                            target.DeclaringObject = null;
+
+                        if (mRep.contentHandler != null)
+                        {
+                            var handler = t.GetMethod(mRep.contentHandler);
+                            handler.Invoke(null, new object[] { target, newTarget });
+                        }
+                    }
+                }
+            }
+
+        }
+
+        internal void ProcessRewriters()
+        {
+            foreach (var t in rewriteAssembly.GetTypes())
+            {
+                foreach (var m in t.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
+                {
+                    var stub = m.GetCustomAttribute<RewriteAttribute>();
+                    if (stub == null)
+                        continue;
+
+                    var name = stub.stubAction == StubAction.UseOld ? (stub.oldName ?? stub.targetName) : (stub.newName ?? stub.targetName);
+
+                    if (m is MethodBase)
+                    {
+                        var target = (from x in Graph.Modules
+                                      from y in x.TypeGraphs
+                                      where y.FullName == stub.typeName
+                                      select y.Methods.First(z => z.Name == name)).Single();
+
+                        methodCache[(MethodBase)m] = target.Builder;
+                    }
+                    else if (m is FieldInfo)
+                    {
+                        var target = (from x in Graph.Modules
+                                      from y in x.TypeGraphs
+                                      where y.FullName == stub.typeName
+                                      select y.Fields.First(z => z.Name == name)).Single();
+
+                        fieldCache[(FieldInfo)m] = target.Builder;
+                    }
+                }
             }
         }
 
@@ -219,6 +282,12 @@ namespace AssemblyTranslator
                 var def = ((MethodInfo)info).GetGenericMethodDefinition();
                 var args = def.GetGenericArguments();
                 info = def.MakeGenericMethod(info.GetGenericArguments().Select(x => GetType(x, args)).ToArray());
+            }
+            else
+            {
+                MethodBase newInfo;
+                if (methodCache.TryGetValue(info, out newInfo))
+                    info = newInfo;
             }
 
             return info;
