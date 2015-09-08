@@ -60,6 +60,8 @@ namespace AssemblyTranslator.Graphs
             foreach (var m in _modules)
                 m.DeclareTypes(translator);
 
+            translator.ProcessTypeRewriters();
+
             foreach (var m in _modules)
                 m.DeclareMembers(translator);
 

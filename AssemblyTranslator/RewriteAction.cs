@@ -10,6 +10,7 @@ namespace AssemblyTranslator
     {
         None,
         Replace,
-        Swap
+        Swap,
+        Add
     }
 }

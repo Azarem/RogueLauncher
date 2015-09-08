@@ -132,29 +132,46 @@ namespace AssemblyTranslator
             foreach (var t in rewriteAssembly.GetTypes())
             {
                 var repl = t.GetCustomAttribute<RewriteAttribute>(false);
-                if (repl != null && repl.action == RewriteAction.Replace)
+                TypeGraph typeTarget = null;
+                if (repl != null)
                 {
-                    var target = (from x in Graph.Modules
+                    typeTarget = (from x in Graph.Modules
                                   from y in x.TypeGraphs
                                   where y.FullName == repl.typeName
                                   select y).Single();
 
-                    target._replacementType = t;
+                    if (repl.action == RewriteAction.Replace)
+                        typeTarget._replacementType = t;
                 }
 
-                foreach (var m in t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
+                foreach (var m in t.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
                 {
                     var mRep = m.GetCustomAttribute<RewriteAttribute>();
-                    if (mRep != null && mRep.action != RewriteAction.None)
-                    {
-                        var target = (from x in Graph.Modules
-                                      from y in x.TypeGraphs
-                                      where y.FullName == mRep.typeName
-                                      select y.Methods.First(z => z.Name == mRep.targetName)).Single();
+                    if (mRep == null || mRep.action == RewriteAction.None)
+                        continue;
 
-                        var newTarget = target.SwitchImpl(m, mRep.newName, mRep.oldName);
-                        if (mRep.action == RewriteAction.Replace)
-                            target.DeclaringObject = null;
+                    var mTypeTarget = mRep.typeName == null || (repl != null && repl.typeName == mRep.typeName) ? typeTarget : (from x in Graph.Modules
+                                                                                                                                from y in x.TypeGraphs
+                                                                                                                                where y.FullName == mRep.typeName
+                                                                                                                                select y).Single();
+
+                    var name = mRep.targetName ?? m.Name;
+
+                    if (m is MethodBase)
+                    {
+                        var target = mTypeTarget.Methods.FirstOrDefault(x => x.Name == name);
+                        MethodGraph newTarget;
+
+                        if (mRep.action == RewriteAction.Add)
+                            newTarget = new MethodGraph((MethodBase)m, mTypeTarget);
+                        else
+                        {
+                            newTarget = target.SwitchImpl((MethodBase)m, mRep.newName, mRep.oldName);
+                            if (mRep.action == RewriteAction.Replace)
+                                target.DeclaringObject = null;
+                            else if (mRep.action == RewriteAction.Swap && newTarget.Name == target.Name)
+                                target.Name += "_Orig";
+                        }
 
                         if (mRep.contentHandler != null)
                         {
@@ -162,49 +179,93 @@ namespace AssemblyTranslator
                             handler.Invoke(null, new object[] { target, newTarget });
                         }
                     }
+                    else if (m is PropertyInfo)
+                    {
+                        var p = m as PropertyInfo;
+                        var target = mTypeTarget.Properties.FirstOrDefault(x => x.Name == name);
+                        PropertyGraph newTarget;
+
+                        if (mRep.action == RewriteAction.Add)
+                        {
+                            newTarget = new PropertyGraph(p, mTypeTarget);
+                            if (newTarget._getAccessor != null)
+                                new MethodGraph(newTarget._getAccessor, mTypeTarget);
+                            if (newTarget._setAccessor != null)
+                                new MethodGraph(newTarget._setAccessor, mTypeTarget);
+                        }
+                    }
                 }
             }
 
+        }
+
+        internal void ProcessTypeRewriters()
+        {
+            foreach (var t in rewriteAssembly.GetTypes())
+            {
+                var repl = t.GetCustomAttribute<RewriteAttribute>(false);
+                TypeGraph typeTarget = null;
+                if (repl != null)
+                {
+                    typeTarget = (from x in Graph.Modules
+                                  from y in x.TypeGraphs
+                                  where y.FullName == repl.typeName
+                                  select y).Single();
+
+                    typeCache[t] = typeTarget.Builder;
+                }
+            }
         }
 
         internal void ProcessRewriters()
         {
             foreach (var t in rewriteAssembly.GetTypes())
             {
+                var repl = t.GetCustomAttribute<RewriteAttribute>(false);
+                TypeGraph typeTarget = null;
+                if (repl != null)
+                {
+                    typeTarget = (from x in Graph.Modules
+                                  from y in x.TypeGraphs
+                                  where y.FullName == repl.typeName
+                                  select y).Single();
+
+                    //typeCache[t] = typeTarget.Builder;
+                }
+
                 foreach (var m in t.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
                 {
-                    var stub = m.GetCustomAttribute<RewriteAttribute>();
+                    var stub = m.GetCustomAttribute<RewriteAttribute>(false);
                     if (stub == null)
                         continue;
 
-                    var name = stub.stubAction == StubAction.UseOld ? (stub.oldName ?? stub.targetName) : (stub.newName ?? stub.targetName);
+                    var mTypeTarget = stub.typeName == null ? typeTarget : (from x in Graph.Modules
+                                                                            from y in x.TypeGraphs
+                                                                            where y.FullName == stub.typeName
+                                                                            select y).Single();
+
+                    var name = (stub.stubAction == StubAction.UseOld ? (stub.oldName ?? stub.targetName) : (stub.newName ?? stub.targetName)) ?? m.Name;
+
+                    if (stub.action == RewriteAction.Swap && stub.oldName == stub.newName)
+                        name += "_Orig";
 
                     if (m is MethodBase)
-                    {
-                        var target = (from x in Graph.Modules
-                                      from y in x.TypeGraphs
-                                      where y.FullName == stub.typeName
-                                      select y.Methods.First(z => z.Name == name)).Single();
-
-                        methodCache[(MethodBase)m] = target.Builder;
-                    }
+                        methodCache[(MethodBase)m] = mTypeTarget.Methods.Single(x => x.Name == name).Builder;
                     else if (m is FieldInfo)
+                        fieldCache[(FieldInfo)m] = mTypeTarget.Fields.Single(x => x.Name == name).Builder;
+                    else if (m is PropertyInfo)
                     {
-                        var target = (from x in Graph.Modules
-                                      from y in x.TypeGraphs
-                                      where y.FullName == stub.typeName
-                                      select y.Fields.First(z => z.Name == name)).Single();
+                        var p = m as PropertyInfo;
+                        var target = mTypeTarget.Properties.Single(x => x.Name == name);
 
-                        fieldCache[(FieldInfo)m] = target.Builder;
+                        SetMethod(p.GetGetMethod(true), GetMethod(target.GetAccessor));
+                        SetMethod(p.GetSetMethod(true), GetMethod(target.SetAccessor));
+                        propertyCache[p] = target.Builder;
                     }
                 }
             }
         }
 
-        private void ProcessExtenders(Assembly asm)
-        {
-
-        }
 
 
         internal ConstructorInfo GetConstructor(MethodBase info)
@@ -226,6 +287,9 @@ namespace AssemblyTranslator
         }
         internal MethodBase GetMethod(MethodBase info, Type[] genericLookup = null)
         {
+            if (info == null)
+                return null;
+
             var type = GetType(info.DeclaringType, genericLookup);
             if (type != info.DeclaringType)
             {
@@ -239,56 +303,62 @@ namespace AssemblyTranslator
                         ret = GetType(m.ReturnType, genericLookup);
                     }
 
-                    info = CurrentModuleBuilder.GetArrayMethod(type, info.Name, info.CallingConvention, ret, info.GetParameters().Select(x => GetType(x.ParameterType, genericLookup)).ToArray());
+                    return CurrentModuleBuilder.GetArrayMethod(type, info.Name, info.CallingConvention, ret, info.GetParameters().Select(x => GetType(x.ParameterType, genericLookup)).ToArray());
                 }
-                else if (info.DeclaringType.Assembly == sourceAssembly)
+
+                if (info.DeclaringType.Assembly == sourceAssembly)
                 {
                     if (info.IsGenericMethod)
                     {
                         var def = (MethodBuilder)methodCache[((MethodInfo)info).GetGenericMethodDefinition()];
                         var args = def.GetGenericArguments();
-                        info = def.MakeGenericMethod(info.GetGenericArguments().Select(x => GetType(x, args)).ToArray());
+                        return def.MakeGenericMethod(info.GetGenericArguments().Select(x => GetType(x, args)).ToArray());
                     }
                     else
-                        info = methodCache[info];
+                        return methodCache[info];
                 }
-                else if (type.IsGenericType)
+
+                if (type.IsGenericType)
                 {
-                    var def = type.GetGenericTypeDefinition();
+                    var def = (type is TypeBuilder || type.GetType().Name == "TypeBuilderInstantiation") ? type.GetGenericTypeDefinition() : type;
                     var par = info.GetParameters();
                     if (info.IsConstructor)
                     {
-                        var met = def.GetConstructors().Single(x => x.GetParameters().Length == par.Length);
-                        info = TypeBuilder.GetConstructor(type, met);
+                        info = def.GetConstructors().Single(x => x.GetParameters().Length == par.Length);
+                        if (def != type)
+                            info = TypeBuilder.GetConstructor(type, (ConstructorInfo)info);
                     }
                     else
                     {
                         //var range = Enumerable.Range(0, par.Length);
-                        var met = (from m in def.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic)
-                                   where m.Name == info.Name
-                                   let p = m.GetParameters()
-                                   where p.Length == par.Length
-                                   //&& !range.Any(x => p[x].ParameterType.IsGenericParameter)
-                                   select m).Single();
+                        info = (from m in def.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic)
+                                where m.Name == info.Name
+                                let p = m.GetParameters()
+                                where p.Length == par.Length
+                                //&& !range.Any(x => p[x].ParameterType.IsGenericParameter)
+                                select m).Single();
                         //var met = def.GetMethod(info.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                        info = TypeBuilder.GetMethod(type, met);
+
+                        if (def != type)
+                            info = TypeBuilder.GetMethod(type, (MethodInfo)info);
                     }
+                    return info;
                 }
-                else
-                    throw new InvalidOperationException();
+
+                //throw new InvalidOperationException();
+
             }
-            else if (info.IsGenericMethod)
+
+            if (info.IsGenericMethod)
             {
                 var def = ((MethodInfo)info).GetGenericMethodDefinition();
                 var args = def.GetGenericArguments();
-                info = def.MakeGenericMethod(info.GetGenericArguments().Select(x => GetType(x, args)).ToArray());
+                return def.MakeGenericMethod(info.GetGenericArguments().Select(x => GetType(x, args)).ToArray());
             }
-            else
-            {
-                MethodBase newInfo;
-                if (methodCache.TryGetValue(info, out newInfo))
-                    info = newInfo;
-            }
+
+            MethodBase newInfo;
+            if (methodCache.TryGetValue(info, out newInfo))
+                return newInfo;
 
             return info;
         }
@@ -346,15 +416,19 @@ namespace AssemblyTranslator
                 return info.GetGenericTypeDefinition().MakeGenericType(genericArguments);
             }
 
+            Type newType;
+            if (typeCache.TryGetValue(info, out newType))
+                info = newType;
+
             return info;
         }
 
-        internal void SetType(Type source, Type builder) { typeCache[source] = builder; }
-        internal void SetProperty(PropertyInfo source, PropertyInfo builder) { propertyCache[source] = builder; }
-        internal void SetMethod(MethodBase source, MethodBase builder) { methodCache[source] = builder; }
-        internal void SetEvent(EventInfo source, EventInfo builder) { eventCache[source] = builder; }
-        internal void SetField(FieldInfo source, FieldInfo builder) { fieldCache[source] = builder; }
-        internal void SetModule(Module source, Module builder) { moduleCache[source] = builder; }
+        internal void SetType(Type source, Type builder) { if (source != null && builder != null) typeCache[source] = builder; }
+        internal void SetProperty(PropertyInfo source, PropertyInfo builder) { if (source != null && builder != null) propertyCache[source] = builder; }
+        internal void SetMethod(MethodBase source, MethodBase builder) { if (source != null && builder != null) methodCache[source] = builder; }
+        internal void SetEvent(EventInfo source, EventInfo builder) { if (source != null && builder != null) eventCache[source] = builder; }
+        internal void SetField(FieldInfo source, FieldInfo builder) { if (source != null && builder != null) fieldCache[source] = builder; }
+        internal void SetModule(Module source, Module builder) { if (source != null && builder != null) moduleCache[source] = builder; }
 
         internal T GetMember<T>(object member, Type[] genericLookup = null) where T : class
         {

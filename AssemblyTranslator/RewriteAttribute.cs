@@ -10,11 +10,12 @@ namespace AssemblyTranslator
     public sealed class RewriteAttribute : Attribute
     {
         internal readonly RewriteAction action;
-        internal readonly string typeName, targetName, newName, oldName;
+        internal string typeName, targetName, newName, oldName;
         internal readonly StubAction stubAction;
         internal readonly string contentHandler;
 
-        public RewriteAttribute(string typeName, string targetName = null, RewriteAction action = RewriteAction.None, string newName = null, string oldName = null, StubAction stubAction = StubAction.UseOld, string contentHandler = null)
+        public RewriteAttribute() { }
+        public RewriteAttribute(string typeName = null, string targetName = null, RewriteAction action = RewriteAction.None, string newName = null, string oldName = null, StubAction stubAction = StubAction.UseOld, string contentHandler = null)
         {
             this.typeName = typeName;
             this.targetName = targetName;

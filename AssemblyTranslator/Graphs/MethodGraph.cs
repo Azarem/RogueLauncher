@@ -116,8 +116,15 @@ namespace AssemblyTranslator.Graphs
         internal void DefineCode(GraphManager translator)
         {
             var generics = _builder.GetGenericArguments();
-            _instructionList.TranslateTypes(translator, generics);
-            _instructionList.Rebuild(_builder);
+            //try
+            //{
+                _instructionList.TranslateTypes(translator, generics);
+                _instructionList.Rebuild(_builder);
+            //}
+            //catch (Exception x)
+            //{
+            //    throw x;
+            //}
         }
 
 

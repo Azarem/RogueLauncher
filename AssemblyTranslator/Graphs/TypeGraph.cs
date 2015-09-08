@@ -152,13 +152,14 @@ namespace AssemblyTranslator.Graphs
                     translator.SetEvent(e._sourceObject, members.FirstOrDefault(x => x is EventInfo && x.Name == e.Name) as EventInfo);
 
                 foreach (var m in _methodGraphs)
-                    translator.SetMethod(m._sourceObject, members.FirstOrDefault(x => {
-                        if(!(x is MethodBase) || x.Name != m.Name)
+                    translator.SetMethod(m._sourceObject, members.FirstOrDefault(x =>
+                    {
+                        if (!(x is MethodBase) || x.Name != m.Name)
                             return false;
 
                         var p = ((MethodBase)x).GetParameters();
 
-                        if(p.Length + 1 != m._parameters.Count)
+                        if (p.Length + 1 != m._parameters.Count)
                             return false;
 
                         return p.All(y => m._parameters[y.Position + 1].ParameterType == y.ParameterType);

@@ -7,8 +7,8 @@ namespace AssemblyTranslator.Graphs
 {
     public class PropertyGraph : MemberGraph<PropertyInfo, PropertyBuilder, PropertyAttributes, TypeGraph, PropertyGraph>
     {
-        protected MethodBase _getAccessor;
-        protected MethodBase _setAccessor;
+        internal MethodBase _getAccessor;
+        internal MethodBase _setAccessor;
         protected Type _propertyType;
         protected object _defaultValue;
         //protected List<Type> _parameterTypes = new List<Type>();
