@@ -10,7 +10,7 @@ using RogueAPI.Equipment;
 namespace RogueLauncher.Rewrite
 {
     [Rewrite("RogueCastle.BlacksmithScreen")]
-    public class BlacksmithScreen
+    public class BlacksmithScreen : Screen
     {
         [Rewrite]
         private ObjContainer m_textInfoStatContainer;

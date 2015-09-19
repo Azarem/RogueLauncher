@@ -21,6 +21,8 @@ namespace AssemblyTranslator
         internal ModuleBuilder CurrentModuleBuilder;
         private Assembly _callingAssembly;
         private Assembly rewriteAssembly;
+
+        private List<TypeRewrite> _typeRewrites = new List<TypeRewrite>();
         //private Module currentModule;
         //private Assembly asm;
 
@@ -133,6 +135,7 @@ namespace AssemblyTranslator
             {
                 var repl = t.GetCustomAttribute<RewriteAttribute>(false);
                 TypeGraph typeTarget = null;
+                TypeRewrite typeRewrite = null;
                 if (repl != null)
                 {
                     typeTarget = (from x in Graph.Modules
@@ -142,12 +145,14 @@ namespace AssemblyTranslator
 
                     if (repl.action == RewriteAction.Replace)
                         typeTarget._replacementType = t;
+
+                    _typeRewrites.Add(typeRewrite = new TypeRewrite() { MemberInfo = t, Rewrite = repl, Graph = typeTarget });
                 }
 
-                foreach (var m in t.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
+                foreach (var m in t.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
                     var mRep = m.GetCustomAttribute<RewriteAttribute>();
-                    if (mRep == null || mRep.action == RewriteAction.None)
+                    if (mRep == null)
                         continue;
 
                     var mTypeTarget = mRep.typeName == null || (repl != null && repl.typeName == mRep.typeName) ? typeTarget : (from x in Graph.Modules
@@ -155,18 +160,22 @@ namespace AssemblyTranslator
                                                                                                                                 where y.FullName == mRep.typeName
                                                                                                                                 select y).Single();
 
+                    if (typeRewrite == null)
+                        _typeRewrites.Add(typeRewrite = new TypeRewrite() { MemberInfo = t });
+
                     var name = mRep.targetName ?? m.Name;
 
                     if (m is MethodBase)
                     {
+                        var mb = m as MethodBase;
                         var target = mTypeTarget.Methods.FirstOrDefault(x => x.Name == name);
-                        MethodGraph newTarget;
+                        MethodGraph newTarget = null;
 
                         if (mRep.action == RewriteAction.Add)
-                            newTarget = new MethodGraph((MethodBase)m, mTypeTarget);
-                        else
+                            newTarget = new MethodGraph(mb, mTypeTarget);
+                        else if (mRep.action != RewriteAction.None)
                         {
-                            newTarget = target.SwitchImpl((MethodBase)m, mRep.newName, mRep.oldName);
+                            newTarget = target.SwitchImpl(mb, mRep.newName, mRep.oldName);
                             if (mRep.action == RewriteAction.Replace)
                                 target.DeclaringObject = null;
                             else if (mRep.action == RewriteAction.Swap && newTarget.Name == target.Name)
@@ -174,25 +183,101 @@ namespace AssemblyTranslator
                         }
 
                         if (mRep.contentHandler != null)
+                            t.GetMethod(mRep.contentHandler).Invoke(null, new object[] { target, newTarget });
+
+                        typeRewrite.MethodRewrites.Add(new RewriteInfo<MethodBase, MethodGraph>()
                         {
-                            var handler = t.GetMethod(mRep.contentHandler);
-                            handler.Invoke(null, new object[] { target, newTarget });
-                        }
+                            MemberInfo = mb,
+                            Rewrite = mRep,
+                            Graph = mRep.action == RewriteAction.Replace || mRep.stubAction == StubAction.UseNew ? (newTarget ?? target) : (target ?? newTarget)
+                        });
                     }
                     else if (m is PropertyInfo)
                     {
                         var p = m as PropertyInfo;
                         var target = mTypeTarget.Properties.FirstOrDefault(x => x.Name == name);
-                        PropertyGraph newTarget;
+                        PropertyGraph newTarget = null;
+                        MethodGraph newGet = null, newSet = null;
+                        MethodGraph oldGet = null, oldSet = null;
 
                         if (mRep.action == RewriteAction.Add)
                         {
                             newTarget = new PropertyGraph(p, mTypeTarget);
                             if (newTarget._getAccessor != null)
-                                new MethodGraph(newTarget._getAccessor, mTypeTarget);
+                                newGet = new MethodGraph(newTarget._getAccessor, mTypeTarget);
                             if (newTarget._setAccessor != null)
-                                new MethodGraph(newTarget._setAccessor, mTypeTarget);
+                                newSet = new MethodGraph(newTarget._setAccessor, mTypeTarget);
                         }
+                        else
+                        {
+                            oldGet = target._getAccessor != null ? mTypeTarget.Methods.FirstOrDefault(x => x._sourceObject == target._getAccessor) : null;
+                            oldSet = target._setAccessor != null ? mTypeTarget.Methods.FirstOrDefault(x => x._sourceObject == target._setAccessor) : null;
+
+                            if (mRep.action != RewriteAction.None)
+                            {
+                                newTarget = new PropertyGraph(p, mTypeTarget);
+                                newTarget.Source = target.Source;
+
+                                if (newTarget._getAccessor != null)
+                                    newGet = oldGet.SwitchImpl(newTarget._getAccessor);
+                                if (newTarget._setAccessor != null)
+                                    newSet = oldSet.SwitchImpl(newTarget._setAccessor);
+
+                                if (mRep.action == RewriteAction.Replace)
+                                {
+                                    if (oldGet != null)
+                                        oldGet.DeclaringObject = null;
+
+                                    if (oldSet != null)
+                                        oldSet.DeclaringObject = null;
+
+                                    target.DeclaringObject = null;
+                                }
+                                else if (mRep.action == RewriteAction.Swap && newTarget.Name == target.Name)
+                                {
+                                    target.Name += "_Orig";
+                                    if (oldGet != null)
+                                        oldGet.Name += "_Orig";
+                                    if (oldSet != null)
+                                        oldSet.Name += "_Orig";
+                                }
+                            }
+                        }
+
+                        if (mRep.contentHandler != null)
+                            t.GetMethod(mRep.contentHandler).Invoke(null, new object[] { target, newTarget });
+
+                        typeRewrite.PropertyRewrites.Add(new PropertyRewrite()
+                        {
+                            MemberInfo = p,
+                            Rewrite = mRep,
+                            Graph = mRep.action == RewriteAction.Replace || mRep.stubAction == StubAction.UseNew ? (newTarget ?? target) : (target ?? newTarget),
+                            GetGraph = mRep.action == RewriteAction.Replace || mRep.stubAction == StubAction.UseNew ? (newGet ?? oldGet) : (oldGet ?? newGet),
+                            SetGraph = mRep.action == RewriteAction.Replace || mRep.stubAction == StubAction.UseNew ? (newSet ?? oldSet) : (oldSet ?? newSet)
+                        });
+                    }
+                    else if (m is FieldInfo)
+                    {
+                        var f = m as FieldInfo;
+                        var target = mTypeTarget.Fields.FirstOrDefault(x => x.Name == name);
+                        FieldGraph newTarget = null;
+
+                        if (mRep.action == RewriteAction.Add)
+                            newTarget = new FieldGraph(f, mTypeTarget);
+                        else if (mRep.action != RewriteAction.None)
+                        {
+                            //TODO
+                        }
+
+                        if (mRep.contentHandler != null)
+                            t.GetMethod(mRep.contentHandler).Invoke(null, new object[] { target, newTarget });
+
+                        typeRewrite.FieldRewrites.Add(new RewriteInfo<FieldInfo, FieldGraph>()
+                        {
+                            MemberInfo = f,
+                            Rewrite = mRep,
+                            Graph = mRep.action == RewriteAction.Replace || mRep.stubAction == StubAction.UseNew ? (newTarget ?? target) : (target ?? newTarget)
+                        });
                     }
                 }
             }
@@ -201,69 +286,99 @@ namespace AssemblyTranslator
 
         internal void ProcessTypeRewriters()
         {
-            foreach (var t in rewriteAssembly.GetTypes())
-            {
-                var repl = t.GetCustomAttribute<RewriteAttribute>(false);
-                TypeGraph typeTarget = null;
-                if (repl != null)
-                {
-                    typeTarget = (from x in Graph.Modules
-                                  from y in x.TypeGraphs
-                                  where y.FullName == repl.typeName
-                                  select y).Single();
+            foreach (var t in _typeRewrites)
+                if (t.Graph != null)
+                    typeCache[t.MemberInfo] = t.Graph.Builder;
 
-                    typeCache[t] = typeTarget.Builder;
-                }
-            }
+            //foreach (var t in rewriteAssembly.GetTypes())
+            //{
+            //    var repl = t.GetCustomAttribute<RewriteAttribute>(false);
+            //    TypeGraph typeTarget = null;
+            //    if (repl != null)
+            //    {
+            //        typeTarget = (from x in Graph.Modules
+            //                      from y in x.TypeGraphs
+            //                      where y.FullName == repl.typeName
+            //                      select y).Single();
+
+            //        typeCache[t] = typeTarget.Builder;
+            //    }
+            //}
         }
 
         internal void ProcessRewriters()
         {
-            foreach (var t in rewriteAssembly.GetTypes())
+            foreach (var t in _typeRewrites)
             {
-                var repl = t.GetCustomAttribute<RewriteAttribute>(false);
-                TypeGraph typeTarget = null;
-                if (repl != null)
+                foreach (var m in t.MethodRewrites)
+                    methodCache[m.MemberInfo] = m.Graph.Builder;
+                foreach (var f in t.FieldRewrites)
+                    fieldCache[f.MemberInfo] = f.Graph.Builder;
+                foreach (var p in t.PropertyRewrites)
                 {
-                    typeTarget = (from x in Graph.Modules
-                                  from y in x.TypeGraphs
-                                  where y.FullName == repl.typeName
-                                  select y).Single();
+                    var mi = p.MemberInfo;
+                    var gr = p.Graph;
 
-                    //typeCache[t] = typeTarget.Builder;
-                }
 
-                foreach (var m in t.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
-                {
-                    var stub = m.GetCustomAttribute<RewriteAttribute>(false);
-                    if (stub == null)
-                        continue;
+                    var acc = mi.GetSetMethod(true);
+                    if (acc != null)
+                        methodCache[acc] = p.SetGraph.Builder;
 
-                    var mTypeTarget = stub.typeName == null ? typeTarget : (from x in Graph.Modules
-                                                                            from y in x.TypeGraphs
-                                                                            where y.FullName == stub.typeName
-                                                                            select y).Single();
+                    acc = mi.GetGetMethod(true);
+                    if (acc != null)
+                        methodCache[acc] = p.GetGraph.Builder;
 
-                    var name = (stub.stubAction == StubAction.UseOld ? (stub.oldName ?? stub.targetName) : (stub.newName ?? stub.targetName)) ?? m.Name;
-
-                    if (stub.action == RewriteAction.Swap && stub.oldName == stub.newName)
-                        name += "_Orig";
-
-                    if (m is MethodBase)
-                        methodCache[(MethodBase)m] = mTypeTarget.Methods.Single(x => x.Name == name).Builder;
-                    else if (m is FieldInfo)
-                        fieldCache[(FieldInfo)m] = mTypeTarget.Fields.Single(x => x.Name == name).Builder;
-                    else if (m is PropertyInfo)
-                    {
-                        var p = m as PropertyInfo;
-                        var target = mTypeTarget.Properties.Single(x => x.Name == name);
-
-                        SetMethod(p.GetGetMethod(true), GetMethod(target.GetAccessor));
-                        SetMethod(p.GetSetMethod(true), GetMethod(target.SetAccessor));
-                        propertyCache[p] = target.Builder;
-                    }
+                    //SetMethod(mi.GetGetMethod(true), GetMethod(gr.GetAccessor));
+                    //SetMethod(mi.GetSetMethod(true), GetMethod(gr.SetAccessor));
+                    propertyCache[mi] = gr.Builder;
                 }
             }
+
+            //foreach (var t in rewriteAssembly.GetTypes())
+            //{
+            //    var repl = t.GetCustomAttribute<RewriteAttribute>(false);
+            //    TypeGraph typeTarget = null;
+            //    if (repl != null)
+            //    {
+            //        typeTarget = (from x in Graph.Modules
+            //                      from y in x.TypeGraphs
+            //                      where y.FullName == repl.typeName
+            //                      select y).Single();
+
+            //        //typeCache[t] = typeTarget.Builder;
+            //    }
+
+            //    foreach (var m in t.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
+            //    {
+            //        var stub = m.GetCustomAttribute<RewriteAttribute>(false);
+            //        if (stub == null)
+            //            continue;
+
+            //        var mTypeTarget = stub.typeName == null ? typeTarget : (from x in Graph.Modules
+            //                                                                from y in x.TypeGraphs
+            //                                                                where y.FullName == stub.typeName
+            //                                                                select y).Single();
+
+            //        var name = (stub.stubAction == StubAction.UseOld ? (stub.oldName ?? stub.targetName) : (stub.newName ?? stub.targetName)) ?? m.Name;
+
+            //        if (stub.action == RewriteAction.Swap && stub.oldName == stub.newName)
+            //            name += "_Orig";
+
+            //        if (m is MethodBase)
+            //            methodCache[(MethodBase)m] = mTypeTarget.Methods.Single(x => x.Name == name).Builder;
+            //        else if (m is FieldInfo)
+            //            fieldCache[(FieldInfo)m] = mTypeTarget.Fields.Single(x => x.Name == name).Builder;
+            //        else if (m is PropertyInfo)
+            //        {
+            //            var p = m as PropertyInfo;
+            //            var target = mTypeTarget.Properties.Single(x => x.Name == name);
+
+            //            SetMethod(p.GetGetMethod(true), GetMethod(target.GetAccessor));
+            //            SetMethod(p.GetSetMethod(true), GetMethod(target.SetAccessor));
+            //            propertyCache[p] = target.Builder;
+            //        }
+            //    }
+            //}
         }
 
 
@@ -461,5 +576,25 @@ namespace AssemblyTranslator
         }
 
 
+        private class RewriteInfo<TMember, TGraph>
+            where TMember : MemberInfo
+            where TGraph : class
+        {
+            public TMember MemberInfo;
+            public TGraph Graph;
+            public RewriteAttribute Rewrite;
+        }
+
+        private class TypeRewrite : RewriteInfo<Type, TypeGraph>
+        {
+            public List<RewriteInfo<FieldInfo, FieldGraph>> FieldRewrites = new List<RewriteInfo<FieldInfo, FieldGraph>>();
+            public List<PropertyRewrite> PropertyRewrites = new List<PropertyRewrite>();
+            public List<RewriteInfo<MethodBase, MethodGraph>> MethodRewrites = new List<RewriteInfo<MethodBase, MethodGraph>>();
+        }
+
+        private class PropertyRewrite : RewriteInfo<PropertyInfo, PropertyGraph>
+        {
+            public MethodGraph GetGraph, SetGraph;
+        }
     }
 }

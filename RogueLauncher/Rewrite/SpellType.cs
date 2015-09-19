@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reflection;
 using AssemblyTranslator;
+using Microsoft.Xna.Framework;
 using RogueAPI.Spells;
 
 namespace RogueLauncher.Rewrite
@@ -17,5 +18,8 @@ namespace RogueLauncher.Rewrite
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
         public static string Icon(byte id) { return SpellDefinition.GetById(id).Icon; }
+
+        [Rewrite]
+        public static Vector3 GetNext3Spells() { return Vector3.Zero; }
     }
 }
