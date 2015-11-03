@@ -1,11 +1,10 @@
-﻿using System;
-using System.Linq;
-using System.Reflection;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using DS2DEngine;
 using InputSystem;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
+using System.Reflection;
 
 namespace RogueLauncher.Rewrite
 {
@@ -14,42 +13,66 @@ namespace RogueLauncher.Rewrite
     {
         [Rewrite]
         private bool m_contentLoaded;
-
         [Rewrite]
         public static Texture2D GenericTexture;
-
         [Rewrite]
         public static Effect ParallaxEffect;
-
         [Rewrite]
         public static Effect ColourSwapShader;
-
         [Rewrite]
         public static RCScreenManager ScreenManager { get { return null; } }
-
         [Rewrite]
         public static PlayerStats PlayerStats;
-
         [Rewrite]
         public static EquipmentSystem EquipmentSystem;
-
         [Rewrite]
         public static InputMap GlobalInput;
-
         [Rewrite]
         public Microsoft.Xna.Framework.GraphicsDeviceManager GraphicsDeviceManager { get { return null; } }
-
         [Rewrite]
         public SaveGameManager SaveManager { get { return null; } }
-
+        [Rewrite]
+        public static SpriteFont PixelArtFont;
+        [Rewrite]
+        public static SpriteFont PixelArtFontBold;
         [Rewrite]
         public static SpriteFont JunicodeFont;
+        [Rewrite]
+        public static SpriteFont EnemyLevelFont;
+        [Rewrite]
+        public static SpriteFont PlayerLevelFont;
+        [Rewrite]
+        public static SpriteFont GoldFont;
+        [Rewrite]
+        public static SpriteFont HerzogFont;
+        [Rewrite]
+        public static SpriteFont JunicodeLargeFont;
+        [Rewrite]
+        public static SpriteFont CinzelFont;
+        [Rewrite]
+        public static SpriteFont BitFont;
+        [Rewrite]
+        public static Effect BWMaskEffect;
+        [Rewrite]
+        public static Effect HSVEffect;
+        [Rewrite]
+        public static Effect InvertShader;
+        [Rewrite]
+        public static Effect ShadowEffect;
+        [Rewrite]
+        public static GaussianBlur GaussianBlur;
+        [Rewrite]
+        public static Effect RippleEffect;
+        [Rewrite]
+        public static float PlaySessionLength { get; set; }
 
         [Rewrite]
         public PhysicsManager PhysicsManager { get { return null; } }
 
-        [Obfuscation(Exclude = true)]
-        [Rewrite(action: RewriteAction.Swap)]
+        [Rewrite]
+        public static Game.SettingStruct GameConfig;
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
         protected virtual void Initialize()
         {
             string name;
@@ -214,7 +237,8 @@ namespace RogueLauncher.Rewrite
             //    }
             //}
 
-            RogueAPI.Content.SpriteUtil.GraphicsDeviceManager = this.GraphicsDeviceManager;
+            RogueAPI.Content.SpriteUtil.GraphicsDeviceManager = GraphicsDeviceManager;
+
 
             RogueAPI.Core.CreateEnemy = CreateEnemyById;
             RogueAPI.Core.AttachEnemyToCurrentRoom = AttachEnemyToCurrentRoom;
@@ -228,11 +252,35 @@ namespace RogueLauncher.Rewrite
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
         protected virtual void LoadContent()
         {
-            if (!this.m_contentLoaded)
+            if (!m_contentLoaded)
             {
-                this.LoadContent();
+                LoadContent();
                 RogueAPI.Core.OnContentLoaded();
             }
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        public void LoadAllEffects()
+        {
+            LoadAllEffects();
+            RogueAPI.Game.Effects.RippleEffect = RippleEffect;
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        public void LoadAllSpriteFonts()
+        {
+            LoadAllSpriteFonts();
+
+            RogueAPI.Game.Fonts.JunicodeFont = JunicodeFont;
+            RogueAPI.Game.Fonts.JunicodeLargeFont = JunicodeLargeFont;
+            RogueAPI.Game.Fonts.BitFont = BitFont;
+            RogueAPI.Game.Fonts.CinzelFont = CinzelFont;
+            RogueAPI.Game.Fonts.EnemyLevelFont = EnemyLevelFont;
+            RogueAPI.Game.Fonts.GoldFont = GoldFont;
+            RogueAPI.Game.Fonts.HerzogFont = HerzogFont;
+            RogueAPI.Game.Fonts.PixelArtFont = PixelArtFont;
+            RogueAPI.Game.Fonts.PixelArtFontBold = PixelArtFontBold;
+            RogueAPI.Game.Fonts.PlayerLevelFont = PlayerLevelFont;
         }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
@@ -245,6 +293,16 @@ namespace RogueLauncher.Rewrite
                 default:
                     throw new InvalidOperationException();
             }
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        protected static RogueAPI.Projectiles.ProjectileObj FireProjectile(RogueAPI.Projectiles.ProjectileDefinition proj, GameObj source, GameObj target)
+        {
+            var screen = Game.ScreenManager.CurrentScreen as ProceduralLevelScreen;
+            if (screen == null)
+                return null;
+
+            return screen.ProjectileManager.FireProjectile(proj, source, target);
         }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
@@ -267,6 +325,10 @@ namespace RogueLauncher.Rewrite
                 case RogueAPI.EffectType.QuestionMark:
                     screen.ImpactEffectPool.DisplayQuestionMark(position ?? target.Position);
                     break;
+
+                case RogueAPI.EffectType.FahRoDus:
+                    screen.ImpactEffectPool.DisplayFusRoDahText(position.Value);
+                    break;
             }
         }
 
@@ -276,6 +338,30 @@ namespace RogueLauncher.Rewrite
             Game.ScreenManager.Player.AttachedLevel.AddEnemyToCurrentRoom((EnemyObj)enemy);
         }
 
+        [Rewrite("RogueCastle.Game+SettingStruct")]
+        public struct SettingStruct
+        {
+            [Rewrite]
+            public int ScreenWidth;
+            [Rewrite]
+            public int ScreenHeight;
+            [Rewrite]
+            public bool FullScreen;
+            [Rewrite]
+            public float MusicVolume;
+            [Rewrite]
+            public float SFXVolume;
+            [Rewrite]
+            public bool QuickDrop;
+            [Rewrite]
+            public bool EnableDirectInput;
+            [Rewrite]
+            public byte ProfileSlot;
+            [Rewrite]
+            public bool ReduceQuality;
+            [Rewrite]
+            public bool EnableSteamCloud;
+        }
     }
 
 }

@@ -1,9 +1,7 @@
-﻿using System;
-using System.Linq;
-using System.Reflection;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using DS2DEngine;
 using Microsoft.Xna.Framework;
+using System.Reflection;
 using Tweener;
 using Tweener.Ease;
 

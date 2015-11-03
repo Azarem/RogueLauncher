@@ -1,11 +1,9 @@
-﻿using System;
-using System.Linq;
-using System.Reflection;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using AssemblyTranslator.Graphs;
 using AssemblyTranslator.IL;
 using DS2DEngine;
 using RogueAPI.Spells;
+using System.Reflection;
 
 namespace RogueLauncher.Rewrite
 {

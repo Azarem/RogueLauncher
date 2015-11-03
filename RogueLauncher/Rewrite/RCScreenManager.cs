@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using DS2DEngine;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Collections.Generic;
 
 namespace RogueLauncher.Rewrite
 {
@@ -23,19 +21,24 @@ namespace RogueLauncher.Rewrite
 
         [Rewrite]
         public void DisplayScreen(int screenType, bool pauseOtherScreens, List<object> objList = null) { }
-
         [Rewrite]
+        public void AddIconsToMap(List<RoomObj> roomList) { }
+
+        [Rewrite(action: RewriteAction.Replace)]
         private void LoadPlayer()
         {
-            if (this.m_player == null)
+            if (m_player == null)
             {
-                this.m_player = new PlayerObj("PlayerIdle_Character", PlayerIndex.One, (base.Game as Game).PhysicsManager, null, base.Game as Game)
+                m_player = new PlayerObj("PlayerIdle_Character", PlayerIndex.One, (Game as Game).PhysicsManager, null, Game as Game)
                 {
                     Position = new Vector2(200f, 200f)
                 };
-                this.m_player.Initialize();
-                RogueAPI.Game.Player.Instance = this.m_player;
+                m_player.Initialize();
+                RogueAPI.Game.Player.Instance = new RogueAPI.Game.Player(m_player);
             }
         }
+
+        [Rewrite]
+        public ProceduralLevelScreen GetLevelScreen() { return null; }
     }
 }

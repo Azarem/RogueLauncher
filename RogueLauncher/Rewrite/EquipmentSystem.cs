@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using AssemblyTranslator;
-using System.Reflection;
+﻿using AssemblyTranslator;
 using RogueAPI.Equipment;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace RogueLauncher.Rewrite
 {

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using DS2DEngine;
 using Microsoft.Xna.Framework;
 
@@ -19,5 +17,17 @@ namespace RogueLauncher.Rewrite
         public void DisplayChestSparkleEffect(Vector2 position) { }
         [Rewrite]
         public void BlackSmokeEffect(GameObj obj) { }
+        [Rewrite]
+        public void DisplayDustEffect(GameObj obj) { }
+        [Rewrite]
+        public void DisplayDoubleJumpEffect(Vector2 position) { }
+        [Rewrite]
+        public void DisplayDashEffect(Vector2 position, bool flip) { }
+        [Rewrite]
+        public void DisplayFartEffect(GameObj obj) { }
+        [Rewrite]
+        public void Draw(Camera2D camera) { }
+        [Rewrite]
+        public void DisplayFusRoDahText(Vector2 position) { }
     }
 }

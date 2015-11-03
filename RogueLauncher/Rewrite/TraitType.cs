@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using DS2DEngine;
 using Microsoft.Xna.Framework;
-using RogueAPI.Traits;
 using RogueAPI.Classes;
+using RogueAPI.Traits;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace RogueLauncher.Rewrite
 {
@@ -14,10 +12,10 @@ namespace RogueLauncher.Rewrite
     public class TraitType
     {
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
-        public static string Description(byte traitType, bool isFemale) { return TraitDefinition.GetById(traitType).Description; }
+        public static string Description(byte traitType, bool isFemale) { return TraitDefinition.GetById(traitType).GetDescription(Game.PlayerStats.IsFemale); }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
-        public static string ProfileCardDescription(byte traitType) { return TraitDefinition.GetById(traitType).ProfileCardDescription; }
+        public static string ProfileCardDescription(byte traitType) { return TraitDefinition.GetById(traitType).GetProfileDescription(Game.PlayerStats.IsFemale); }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
         public static byte Rarity(byte traitType) { return TraitDefinition.GetById(traitType).Rarity; }

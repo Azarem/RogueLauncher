@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 
 namespace RogueLauncher.Rewrite
 {
@@ -18,6 +16,21 @@ namespace RogueLauncher.Rewrite
             EXPERT,
             [Rewrite]
             MINIBOSS
+        }
+
+        [Rewrite("RogueCastle.GameTypes+LevelType")]
+        public enum LevelType
+        {
+            [Rewrite]
+            NONE,
+            [Rewrite]
+            CASTLE,
+            [Rewrite]
+            GARDEN,
+            [Rewrite]
+            DUNGEON,
+            [Rewrite]
+            TOWER
         }
     }
 }

@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using Microsoft.Xna.Framework;
+using System.Collections.Generic;
 
 namespace RogueLauncher.Rewrite
 {
@@ -42,7 +40,52 @@ namespace RogueLauncher.Rewrite
         [Rewrite]
         public Vector3 WizardSpellList { get; set; }
         [Rewrite]
+        public byte SpecialItem { get; set; }
+        [Rewrite]
+        public bool TutorialComplete { get; set; }
+        [Rewrite]
         public List<PlayerLineageData> CurrentBranches;
+        [Rewrite]
+        public int CurrentHealth { get; set; }
+        [Rewrite]
+        public int CurrentMana { get; set; }
+        [Rewrite]
+        public bool EyeballBossBeaten { get; set; }
+        [Rewrite]
+        public bool FairyBossBeaten { get; set; }
+        [Rewrite]
+        public bool FinalDoorOpened { get; set; }
+        [Rewrite]
+        public bool FireballBossBeaten { get; set; }
+        [Rewrite]
+        public bool BlobBossBeaten { get; set; }
+        [Rewrite]
+        public bool LastbossBeaten { get; set; }
+        [Rewrite]
+        public bool ChallengeBlobBeaten { get; set; }
+        [Rewrite]
+        public bool ChallengeBlobUnlocked { get; set; }
+        [Rewrite]
+        public bool ChallengeEyeballBeaten { get; set; }
+        [Rewrite]
+        public bool ChallengeEyeballUnlocked { get; set; }
+        [Rewrite]
+        public bool ChallengeFireballBeaten { get; set; }
+        [Rewrite]
+        public bool ChallengeFireballUnlocked { get; set; }
+        [Rewrite]
+        public bool ChallengeLastBossUnlocked { get; set; }
+        [Rewrite]
+        public bool ChallengeSkullBeaten { get; set; }
+        [Rewrite]
+        public bool ChallengeSkullUnlocked { get; set; }
+        [Rewrite]
+        public float TotalHoursPlayed { get; set; }
+        [Rewrite]
+        public byte TotalRunesFound { get { return 0; } }
+
+        [Rewrite]
+        public List<Vector4> EnemiesKilledList;
 
         [Rewrite(action: RewriteAction.Add)]
         private Vector2 m_traits;

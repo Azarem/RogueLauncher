@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using Microsoft.Xna.Framework;
 
 namespace RogueLauncher.Rewrite

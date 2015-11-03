@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using DS2DEngine;
 
 namespace RogueLauncher.Rewrite
@@ -24,6 +22,28 @@ namespace RogueLauncher.Rewrite
         public bool IgnoreBoundsCheck { get; set; }
         [Rewrite]
         public GameObj Target { get; set; }
+        [Rewrite]
+        public bool WrapProjectile { get; set; }
+        [Rewrite]
+        public bool ChaseTarget { get; set; }
+        [Rewrite]
+        public GameObj Source { get; set; }
+        [Rewrite]
+        public bool CollidesWithTerrain { get; set; }
+        [Rewrite]
+        public bool DestroysWithTerrain { get; set; }
+        [Rewrite]
+        public bool DestroysWithEnemy { get; set; }
+        [Rewrite]
+        public bool FollowArc { get; set; }
+        [Rewrite]
+        public bool CollidesWith1Ways { get; set; }
+        [Rewrite]
+        public bool DestroyOnRoomTransition { get; set; }
+        [Rewrite]
+        public bool CanBeFusRohDahed { get; set; }
+        [Rewrite]
+        public bool IgnoreInvincibleCounter { get; set; }
 
         [Rewrite]
         public ProjectileObj(string spriteName) : base(spriteName, null) { }
@@ -32,5 +52,9 @@ namespace RogueLauncher.Rewrite
         public void RunDisplacerEffect(RoomObj room, PlayerObj player) { }
         [Rewrite]
         public void KillProjectile() { }
+        [Rewrite]
+        public void Reset() { }
+        [Rewrite]
+        public void UpdateHeading() { }
     }
 }

@@ -575,6 +575,11 @@ namespace AssemblyTranslator
             graph._replacementType = newType;
         }
 
+        public void ExtendType(Type oldType, Type newType)
+        {
+            typeCache[oldType] = newType;
+        }
+
 
         private class RewriteInfo<TMember, TGraph>
             where TMember : MemberInfo

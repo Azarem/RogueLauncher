@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using DS2DEngine;
 using Microsoft.Xna.Framework;
 
@@ -17,6 +15,12 @@ namespace RogueLauncher.Rewrite
         public int State { get; set; }
         [Rewrite]
         public bool IsKilled { get { return false; } }
+        [Rewrite]
+        public float JumpHeight { get; set; }
+        [Rewrite]
+        public float DoubleJumpHeight { get; internal set; }
+        [Rewrite]
+        public int CurrentHealth { get; set; }
 
         [Rewrite]
         public CharacterObj(string spriteName, PhysicsManager physicsManager, ProceduralLevelScreen levelToAttachTo)

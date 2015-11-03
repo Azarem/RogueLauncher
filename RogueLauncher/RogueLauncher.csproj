@@ -111,10 +111,12 @@
     <Compile Include="Rewrite\CarnivalShoot1BonusRoom.cs" />
     <Compile Include="Rewrite\CarnivalShoot2BonusRoom.cs" />
     <Compile Include="Rewrite\CharacterObj.cs" />
+    <Compile Include="Rewrite\ChestBonusRoomObj.cs" />
     <Compile Include="Rewrite\ClassType.cs" />
     <Compile Include="Rewrite\CreditsScreen.cs" />
     <Compile Include="Rewrite\EnchantressScreen.cs" />
     <Compile Include="Rewrite\EndingRoomObj.cs" />
+    <Compile Include="Rewrite\EnemyHUDObj.cs" />
     <Compile Include="Rewrite\EnemyObj.cs" />
     <Compile Include="Rewrite\EnemyObj_Chicken.cs" />
     <Compile Include="Rewrite\EquipmentAbilityType.cs" />
@@ -125,12 +127,16 @@
     <Compile Include="Rewrite\Game.cs" />
     <Compile Include="Rewrite\GameTypes.cs" />
     <Compile Include="Rewrite\GameUtil.cs" />
+    <Compile Include="Rewrite\GaussianBlur.cs" />
     <Compile Include="Rewrite\GetItemScreen.cs" />
     <Compile Include="Rewrite\ImpactEffectPool.cs" />
     <Compile Include="Rewrite\ItemDropManager.cs" />
     <Compile Include="Rewrite\KeyIconTextObj.cs" />
+    <Compile Include="Rewrite\LevelEV.cs" />
     <Compile Include="Rewrite\LineageObj.cs" />
     <Compile Include="Rewrite\LineageScreen.cs" />
+    <Compile Include="Rewrite\MapObj.cs" />
+    <Compile Include="Rewrite\MapScreen.cs" />
     <Compile Include="Rewrite\PlayerHUDObj.cs" />
     <Compile Include="Rewrite\PlayerLineageData.cs" />
     <Compile Include="Rewrite\PlayerObj.cs" />
@@ -139,6 +145,7 @@
     <Compile Include="Rewrite\ProceduralLevelScreen.cs" />
     <Compile Include="Rewrite\ProfileCardScreen.cs" />
     <Compile Include="Rewrite\Program.cs" />
+    <Compile Include="Rewrite\ProjectileIconPool.cs" />
     <Compile Include="Rewrite\ProjectileManager.cs" />
     <Compile Include="Rewrite\ProjectileObj.cs" />
     <Compile Include="Rewrite\RCScreenManager.cs" />
@@ -195,6 +202,9 @@
   <ItemGroup>
     <Content Include="LauncherIcon.ico" />
     <EmbeddedResource Include="RogueAPI.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bundleconfig.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

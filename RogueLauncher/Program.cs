@@ -79,6 +79,7 @@ namespace RogueLauncher
                 Environment.SetEnvironmentVariable("SteamAppId", appId);
 
             manager.ReplaceType("RogueCastle.ProjectileData", typeof(RogueAPI.Projectiles.ProjectileInstance));
+            manager.ReplaceType("RogueCastle.ProjectileObj", typeof(RogueAPI.Projectiles.ProjectileObj));
             manager.ReplaceType("RogueCastle.EquipmentData", typeof(RogueAPI.Equipment.EquipmentBase));
 
             manager.CreateAssembly(newAssemblyName, debug);

@@ -1,6 +1,5 @@
-﻿using System;
-using System.Linq;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
+using DS2DEngine;
 using Microsoft.Xna.Framework;
 
 namespace RogueLauncher.Rewrite
@@ -10,5 +9,7 @@ namespace RogueLauncher.Rewrite
     {
         [Rewrite]
         public void DropItem(Vector2 position, int dropType, float amount) { }
+        [Rewrite]
+        public void Draw(Camera2D camera) { }
     }
 }

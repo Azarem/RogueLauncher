@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 
 namespace RogueLauncher.Rewrite
 {
@@ -9,5 +7,8 @@ namespace RogueLauncher.Rewrite
     {
         [Rewrite]
         public void SaveFiles(params SaveType[] saveList) { }
+
+        [Rewrite]
+        public void ResetAutosave() { }
     }
 }

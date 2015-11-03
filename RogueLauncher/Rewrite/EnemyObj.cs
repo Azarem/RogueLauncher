@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using DS2DEngine;
 
 namespace RogueLauncher.Rewrite
@@ -18,5 +16,8 @@ namespace RogueLauncher.Rewrite
             : base(spriteName, physicsManager, levelToAttachTo)
         {
         }
+
+        [Rewrite]
+        public void DrawDetectionRadii(Camera2D camera) { }
     }
 }

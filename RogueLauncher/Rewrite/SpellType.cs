@@ -1,9 +1,7 @@
-﻿using System;
-using System.Linq;
-using System.Reflection;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using Microsoft.Xna.Framework;
 using RogueAPI.Spells;
+using System.Reflection;
 
 namespace RogueLauncher.Rewrite
 {

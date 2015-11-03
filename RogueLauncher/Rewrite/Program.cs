@@ -1,8 +1,7 @@
-﻿using System;
-using System.Linq;
+﻿using AssemblyTranslator;
 using AssemblyTranslator.IL;
-using AssemblyTranslator;
-using System.Reflection.Emit;
+using System;
+using System.Linq;
 
 namespace RogueLauncher.Rewrite
 {

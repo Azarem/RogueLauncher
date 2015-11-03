@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using AssemblyTranslator;
+﻿using AssemblyTranslator;
 using DS2DEngine;
 using RogueAPI.Classes;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace RogueLauncher.Rewrite
 {
