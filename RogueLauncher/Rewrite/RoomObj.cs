@@ -24,5 +24,7 @@ namespace RogueLauncher.Rewrite
         public void DrawBGObjs(Camera2D camera) { }
         [Rewrite]
         public virtual void OnExit() { }
+        [Rewrite]
+        public List<TerrainObj> TerrainObjList { get; internal set; }
     }
 }

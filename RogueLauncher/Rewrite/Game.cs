@@ -3,7 +3,12 @@ using DS2DEngine;
 using InputSystem;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using RogueAPI.Game;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Reflection;
 
 namespace RogueLauncher.Rewrite
@@ -63,6 +68,8 @@ namespace RogueLauncher.Rewrite
         public static GaussianBlur GaussianBlur;
         [Rewrite]
         public static Effect RippleEffect;
+        [Rewrite]
+        public static Effect MaskEffect;
         [Rewrite]
         public static float PlaySessionLength { get; set; }
 
@@ -242,10 +249,81 @@ namespace RogueLauncher.Rewrite
 
             RogueAPI.Core.CreateEnemy = CreateEnemyById;
             RogueAPI.Core.AttachEnemyToCurrentRoom = AttachEnemyToCurrentRoom;
-            RogueAPI.Core.AttachEffect = AttachEffect;
+            //RogueAPI.Core.AttachEffect = AttachEffect;
+            RogueAPI.Core.GetCurrentRoomTerrainObjects = GetCurrentTerrainObjects;
+            RogueAPI.Effects.EffectDefinition.AllocateSprite = AllocateSprite;
             RogueAPI.Core.Initialize();
 
             Initialize();
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        private void InitializeDefaultConfig()
+        {
+            InitializeDefaultConfig();
+            RogueAPI.Game.InputManager.ThumbstickDeadzone = InputSystem.InputManager.Deadzone;
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        public static void InitializeGlobalInput()
+        {
+            RogueAPI.Game.InputManager.ClearAll();
+
+            RogueAPI.Game.InputManager.MapKey(Keys.Enter, InputKeys.MenuConfirm1);
+            RogueAPI.Game.InputManager.MapKey(Keys.D, InputKeys.MenuConfirm2);
+            RogueAPI.Game.InputManager.MapKey(Keys.Escape, InputKeys.MenuCancel1);
+            RogueAPI.Game.InputManager.MapKey(Keys.S, InputKeys.MenuCancel2);
+            RogueAPI.Game.InputManager.MapKey(Keys.LeftControl, InputKeys.MenuCredits);
+            RogueAPI.Game.InputManager.MapKey(Keys.Tab, InputKeys.MenuOptions);
+            RogueAPI.Game.InputManager.MapKey(Keys.LeftShift, InputKeys.MenuProfileCard);
+            RogueAPI.Game.InputManager.MapKey(Keys.Back, InputKeys.MenuRogueMode);
+            RogueAPI.Game.InputManager.MapKey(Keys.Escape, InputKeys.MenuPause);
+            RogueAPI.Game.InputManager.MapKey(Keys.Tab, InputKeys.MenuMap);
+            RogueAPI.Game.InputManager.MapKey(Keys.Escape, InputKeys.MenuProfileSelect);
+            RogueAPI.Game.InputManager.MapKey(Keys.Back, InputKeys.MenuDeleteProfile);
+            RogueAPI.Game.InputManager.MapKey(Keys.S, InputKeys.PlayerJump1);
+            RogueAPI.Game.InputManager.MapKey(Keys.Space, InputKeys.PlayerJump2);
+            RogueAPI.Game.InputManager.MapKey(Keys.W, InputKeys.PlayerSpell1);
+            RogueAPI.Game.InputManager.MapKey(Keys.D, InputKeys.PlayerAttack);
+            RogueAPI.Game.InputManager.MapKey(Keys.A, InputKeys.PlayerBlock);
+            RogueAPI.Game.InputManager.MapKey(Keys.Q, InputKeys.PlayerDashLeft);
+            RogueAPI.Game.InputManager.MapKey(Keys.E, InputKeys.PlayerDashRight);
+            RogueAPI.Game.InputManager.MapKey(Keys.I, InputKeys.PlayerUp1);
+            RogueAPI.Game.InputManager.MapKey(Keys.Up, InputKeys.PlayerUp2);
+            RogueAPI.Game.InputManager.MapKey(Keys.K, InputKeys.PlayerDown1);
+            RogueAPI.Game.InputManager.MapKey(Keys.Down, InputKeys.PlayerDown2);
+            RogueAPI.Game.InputManager.MapKey(Keys.J, InputKeys.PlayerLeft1);
+            RogueAPI.Game.InputManager.MapKey(Keys.Left, InputKeys.PlayerLeft2);
+            RogueAPI.Game.InputManager.MapKey(Keys.L, InputKeys.PlayerRight1);
+            RogueAPI.Game.InputManager.MapKey(Keys.Right, InputKeys.PlayerRight2);
+
+            RogueAPI.Game.InputManager.MapButton(Buttons.A, InputKeys.MenuConfirm1);
+            RogueAPI.Game.InputManager.MapButton(Buttons.Start, InputKeys.MenuConfirm2);
+            RogueAPI.Game.InputManager.MapButton(Buttons.B, InputKeys.MenuCancel1);
+            RogueAPI.Game.InputManager.MapButton(Buttons.Back, InputKeys.MenuCancel2);
+            RogueAPI.Game.InputManager.MapButton(Buttons.RightTrigger, InputKeys.MenuCredits);
+            RogueAPI.Game.InputManager.MapButton(Buttons.Y, InputKeys.MenuOptions);
+            RogueAPI.Game.InputManager.MapButton(Buttons.X, InputKeys.MenuProfileCard);
+            RogueAPI.Game.InputManager.MapButton(Buttons.Back, InputKeys.MenuRogueMode);
+            RogueAPI.Game.InputManager.MapButton(Buttons.Start, InputKeys.MenuPause);
+            RogueAPI.Game.InputManager.MapButton(Buttons.Back, InputKeys.MenuMap);
+            RogueAPI.Game.InputManager.MapButton(Buttons.Back, InputKeys.MenuProfileSelect);
+            RogueAPI.Game.InputManager.MapButton(Buttons.Y, InputKeys.MenuDeleteProfile);
+            RogueAPI.Game.InputManager.MapButton(Buttons.A, InputKeys.PlayerJump1);
+            RogueAPI.Game.InputManager.MapButton(Buttons.X, InputKeys.PlayerAttack);
+            RogueAPI.Game.InputManager.MapButton(Buttons.Y, InputKeys.PlayerBlock);
+            RogueAPI.Game.InputManager.MapButton(Buttons.LeftTrigger, InputKeys.PlayerDashLeft);
+            RogueAPI.Game.InputManager.MapButton(Buttons.RightTrigger, InputKeys.PlayerDashRight);
+            RogueAPI.Game.InputManager.MapButton(Buttons.DPadUp, InputKeys.PlayerUp1);
+            RogueAPI.Game.InputManager.MapButton(Buttons.DPadDown, InputKeys.PlayerDown1);
+            RogueAPI.Game.InputManager.MapButton(Buttons.DPadLeft, InputKeys.PlayerLeft1);
+            RogueAPI.Game.InputManager.MapButton(Buttons.LeftThumbstickLeft, InputKeys.PlayerLeft2);
+            RogueAPI.Game.InputManager.MapButton(Buttons.DPadRight, InputKeys.PlayerRight1);
+            RogueAPI.Game.InputManager.MapButton(Buttons.LeftThumbstickRight, InputKeys.PlayerRight2);
+            RogueAPI.Game.InputManager.MapButton(Buttons.B, InputKeys.PlayerSpell1);
+            RogueAPI.Game.InputManager.MapStick(InputKeys.PlayerUp2, RogueAPI.Game.ThumbStick.Left, -90f, 30f);
+            RogueAPI.Game.InputManager.MapStick(InputKeys.PlayerDown2, RogueAPI.Game.ThumbStick.Left, 90f, 30f);
+
         }
 
 
@@ -263,7 +341,15 @@ namespace RogueLauncher.Rewrite
         public void LoadAllEffects()
         {
             LoadAllEffects();
-            RogueAPI.Game.Effects.RippleEffect = RippleEffect;
+            RogueAPI.Game.Shaders.Ripple = RippleEffect;
+            RogueAPI.Game.Shaders.BWMask = BWMaskEffect;
+            RogueAPI.Game.Shaders.ColorSwap = ColourSwapShader;
+            //RogueAPI.Game.Shaders.GaussianBlur = GaussianBlur;
+            RogueAPI.Game.Shaders.HSV = HSVEffect;
+            RogueAPI.Game.Shaders.Invert = InvertShader;
+            RogueAPI.Game.Shaders.Mask = MaskEffect;
+            RogueAPI.Game.Shaders.Parallax = ParallaxEffect;
+            RogueAPI.Game.Shaders.Shadow = ShadowEffect;
         }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
@@ -281,6 +367,148 @@ namespace RogueLauncher.Rewrite
             RogueAPI.Game.Fonts.PixelArtFont = PixelArtFont;
             RogueAPI.Game.Fonts.PixelArtFontBold = PixelArtFontBold;
             RogueAPI.Game.Fonts.PlayerLevelFont = PlayerLevelFont;
+        }
+
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void LoadConfig()
+        {
+            Console.WriteLine("Loading Config file");
+            this.InitializeDefaultConfig();
+            try
+            {
+                string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                using (StreamReader streamReader = new StreamReader(Path.Combine(folderPath, "Rogue Legacy", "GameConfig.ini")))
+                {
+                    CultureInfo cultureInfo = (CultureInfo)CultureInfo.CurrentCulture.Clone();
+                    cultureInfo.NumberFormat.CurrencyDecimalSeparator = ".";
+
+                    string line = null;
+                    while ((line = streamReader.ReadLine()) != null)
+                    {
+                        int index = line.IndexOf("=");
+                        if (index < 0)
+                            continue;
+
+                        string key = line.Substring(0, index);
+                        string value = line.Substring(index + 1);
+
+                        switch (key)
+                        {
+                            case "ScreenWidth": GameConfig.ScreenWidth = int.Parse(value, NumberStyles.Any, cultureInfo); break;
+                            case "ScreenHeight": GameConfig.ScreenHeight = int.Parse(value, NumberStyles.Any, cultureInfo); break;
+                            case "Fullscreen": GameConfig.FullScreen = bool.Parse(value); break;
+                            case "QuickDrop": GameConfig.QuickDrop = bool.Parse(value); break;
+                            case "MusicVol": GameConfig.MusicVolume = float.Parse(value); break;
+                            case "SFXVol": GameConfig.SFXVolume = float.Parse(value); break;
+                            case "DeadZone": RogueAPI.Game.InputManager.ThumbstickDeadzone = (float)int.Parse(value, NumberStyles.Any, cultureInfo); break;
+                            case "EnableDirectInput": GameConfig.EnableDirectInput = bool.Parse(value); break;
+                            case "ReduceQuality": LevelEV.SAVE_FRAMES = GameConfig.ReduceQuality = bool.Parse(value); break;
+                            case "EnableSteamCloud": GameConfig.EnableSteamCloud = bool.Parse(value); break;
+                            case "Slot": GameConfig.ProfileSlot = byte.Parse(value, NumberStyles.Any, cultureInfo); break;
+                            case "KeyUP": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerUp1); break;
+                            case "KeyDOWN": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerDown1); break;
+                            case "KeyLEFT": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerLeft1); break;
+                            case "KeyRIGHT": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerRight1); break;
+                            case "KeyATTACK": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerAttack); break;
+                            case "KeyJUMP": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerJump1); break;
+                            case "KeySPECIAL": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerBlock); break;
+                            case "KeyDASHLEFT": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerDashLeft); break;
+                            case "KeyDASHRIGHT": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerDashRight); break;
+                            case "KeySPELL1": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerSpell1); break;
+                            case "ButtonUP": RogueAPI.Game.InputManager.MapButton((Buttons)Enum.Parse(typeof(Buttons), value), InputKeys.PlayerUp1); break;
+                            case "ButtonDOWN": RogueAPI.Game.InputManager.MapButton((Buttons)Enum.Parse(typeof(Buttons), value), InputKeys.PlayerDown1); break;
+                            case "ButtonLEFT": RogueAPI.Game.InputManager.MapButton((Buttons)Enum.Parse(typeof(Buttons), value), InputKeys.PlayerLeft1); break;
+                            case "ButtonRIGHT": RogueAPI.Game.InputManager.MapButton((Buttons)Enum.Parse(typeof(Buttons), value), InputKeys.PlayerRight1); break;
+                            case "ButtonATTACK": RogueAPI.Game.InputManager.MapButton((Buttons)Enum.Parse(typeof(Buttons), value), InputKeys.PlayerAttack); break;
+                            case "ButtonJUMP": RogueAPI.Game.InputManager.MapButton((Buttons)Enum.Parse(typeof(Buttons), value), InputKeys.PlayerJump1); break;
+                            case "ButtonSPECIAL": RogueAPI.Game.InputManager.MapButton((Buttons)Enum.Parse(typeof(Buttons), value), InputKeys.PlayerBlock); break;
+                            case "ButtonDASHLEFT": RogueAPI.Game.InputManager.MapButton((Buttons)Enum.Parse(typeof(Buttons), value), InputKeys.PlayerDashLeft); break;
+                            case "ButtonDASHRIGHT": RogueAPI.Game.InputManager.MapButton((Buttons)Enum.Parse(typeof(Buttons), value), InputKeys.PlayerDashRight); break;
+                            case "ButtonSPELL1": RogueAPI.Game.InputManager.MapButton((Buttons)Enum.Parse(typeof(Buttons), value), InputKeys.PlayerSpell1); break;
+                        }
+                    }
+
+                    RogueAPI.Game.InputManager.MapKey(RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerAttack), InputKeys.MenuConfirm2);
+                    RogueAPI.Game.InputManager.MapKey(RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerJump1), InputKeys.MenuCancel2);
+
+                    streamReader.Close();
+
+                    if (GameConfig.ScreenHeight <= 0 || GameConfig.ScreenWidth <= 0)
+                        throw new Exception("Blank Config File");
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Config File Not Found. Creating Default Config File.");
+                InitializeDefaultConfig();
+                SaveConfig();
+            }
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void SaveConfig()
+        {
+            Console.WriteLine("Saving Config file");
+            string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+            string path = Path.Combine(folderPath, "Rogue Legacy");
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+
+            using (StreamWriter streamWriter = new StreamWriter(Path.Combine(folderPath, "Rogue Legacy", "GameConfig.ini"), false))
+            {
+                streamWriter.WriteLine("[Screen Resolution]");
+                streamWriter.WriteLine("ScreenWidth=" + GameConfig.ScreenWidth);
+                streamWriter.WriteLine("ScreenHeight=" + GameConfig.ScreenHeight);
+                streamWriter.WriteLine();
+                streamWriter.WriteLine("[Fullscreen]");
+                streamWriter.WriteLine("Fullscreen=" + GameConfig.FullScreen);
+                streamWriter.WriteLine();
+                streamWriter.WriteLine("[QuickDrop]");
+                streamWriter.WriteLine("QuickDrop=" + GameConfig.QuickDrop);
+                streamWriter.WriteLine();
+                streamWriter.WriteLine("[Game Volume]");
+                streamWriter.WriteLine("MusicVol=" + string.Format("{0:F2}", GameConfig.MusicVolume));
+                streamWriter.WriteLine("SFXVol=" + string.Format("{0:F2}", GameConfig.SFXVolume));
+                streamWriter.WriteLine();
+                streamWriter.WriteLine("[Joystick Dead Zone]");
+                streamWriter.WriteLine("DeadZone=" + RogueAPI.Game.InputManager.ThumbstickDeadzone);
+                streamWriter.WriteLine();
+                streamWriter.WriteLine("[Enable DirectInput Gamepads]");
+                streamWriter.WriteLine("EnableDirectInput=" + GameConfig.EnableDirectInput);
+                streamWriter.WriteLine();
+                streamWriter.WriteLine("[Reduce Shader Quality]");
+                streamWriter.WriteLine("ReduceQuality=" + GameConfig.ReduceQuality);
+                streamWriter.WriteLine();
+                streamWriter.WriteLine("[Profile]");
+                streamWriter.WriteLine("Slot=" + GameConfig.ProfileSlot);
+                streamWriter.WriteLine();
+                streamWriter.WriteLine("[Keyboard Config]");
+                streamWriter.WriteLine("KeyUP=" + RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerUp1));
+                streamWriter.WriteLine("KeyDOWN=" + RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerDown1));
+                streamWriter.WriteLine("KeyLEFT=" + RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerLeft1));
+                streamWriter.WriteLine("KeyRIGHT=" + RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerRight1));
+                streamWriter.WriteLine("KeyATTACK=" + RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerAttack));
+                streamWriter.WriteLine("KeyJUMP=" + RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerJump1));
+                streamWriter.WriteLine("KeySPECIAL=" + RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerBlock));
+                streamWriter.WriteLine("KeyDASHLEFT=" + RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerDashLeft));
+                streamWriter.WriteLine("KeyDASHRIGHT=" + RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerDashRight));
+                streamWriter.WriteLine("KeySPELL1=" + RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerSpell1));
+                streamWriter.WriteLine();
+                streamWriter.WriteLine("[Gamepad Config]");
+                streamWriter.WriteLine("ButtonUP=" + RogueAPI.Game.InputManager.GetMappedButton(InputKeys.PlayerUp1));
+                streamWriter.WriteLine("ButtonDOWN=" + RogueAPI.Game.InputManager.GetMappedButton(InputKeys.PlayerDown1));
+                streamWriter.WriteLine("ButtonLEFT=" + RogueAPI.Game.InputManager.GetMappedButton(InputKeys.PlayerLeft1));
+                streamWriter.WriteLine("ButtonRIGHT=" + RogueAPI.Game.InputManager.GetMappedButton(InputKeys.PlayerRight1));
+                streamWriter.WriteLine("ButtonATTACK=" + RogueAPI.Game.InputManager.GetMappedButton(InputKeys.PlayerAttack));
+                streamWriter.WriteLine("ButtonJUMP=" + RogueAPI.Game.InputManager.GetMappedButton(InputKeys.PlayerJump1));
+                streamWriter.WriteLine("ButtonSPECIAL=" + RogueAPI.Game.InputManager.GetMappedButton(InputKeys.PlayerBlock));
+                streamWriter.WriteLine("ButtonDASHLEFT=" + RogueAPI.Game.InputManager.GetMappedButton(InputKeys.PlayerDashLeft));
+                streamWriter.WriteLine("ButtonDASHRIGHT=" + RogueAPI.Game.InputManager.GetMappedButton(InputKeys.PlayerDashRight));
+                streamWriter.WriteLine("ButtonSPELL1=" + RogueAPI.Game.InputManager.GetMappedButton(InputKeys.PlayerSpell1));
+                streamWriter.Close();
+            }
         }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
@@ -305,31 +533,43 @@ namespace RogueLauncher.Rewrite
             return screen.ProjectileManager.FireProjectile(proj, source, target);
         }
 
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        //protected static void AttachEffect(RogueAPI.EffectType effect, GameObj target, Vector2? position)
+        //{
+        //    var screen = Game.ScreenManager.CurrentScreen as ProceduralLevelScreen;
+        //    if (screen == null)
+        //        return;
+
+        //    switch (effect)
+        //    {
+        //        case RogueAPI.EffectType.BlackSmoke:
+        //            screen.ImpactEffectPool.BlackSmokeEffect(target);
+        //            break;
+
+        //        case RogueAPI.EffectType.ChestSparkle:
+        //            screen.ImpactEffectPool.DisplayChestSparkleEffect(position ?? target.Position);
+        //            break;
+
+        //        case RogueAPI.EffectType.QuestionMark:
+        //            screen.ImpactEffectPool.DisplayQuestionMark(position ?? target.Position);
+        //            break;
+
+        //        case RogueAPI.EffectType.FahRoDus:
+        //            screen.ImpactEffectPool.DisplayFusRoDahText(position.Value);
+        //            break;
+        //    }
+        //}
+
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
-        protected static void AttachEffect(RogueAPI.EffectType effect, GameObj target, Vector2? position)
+        protected static IEnumerable<BlankObj> GetCurrentTerrainObjects()
         {
-            var screen = Game.ScreenManager.CurrentScreen as ProceduralLevelScreen;
-            if (screen == null)
-                return;
+            return Game.ScreenManager.Player.AttachedLevel.CurrentRoom.TerrainObjList;
+        }
 
-            switch (effect)
-            {
-                case RogueAPI.EffectType.BlackSmoke:
-                    screen.ImpactEffectPool.BlackSmokeEffect(target);
-                    break;
-
-                case RogueAPI.EffectType.ChestSparkle:
-                    screen.ImpactEffectPool.DisplayChestSparkleEffect(position ?? target.Position);
-                    break;
-
-                case RogueAPI.EffectType.QuestionMark:
-                    screen.ImpactEffectPool.DisplayQuestionMark(position ?? target.Position);
-                    break;
-
-                case RogueAPI.EffectType.FahRoDus:
-                    screen.ImpactEffectPool.DisplayFusRoDahText(position.Value);
-                    break;
-            }
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        protected static SpriteObj AllocateSprite()
+        {
+            return Game.ScreenManager.Player.AttachedLevel.ImpactEffectPool.CheckOut();
         }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]

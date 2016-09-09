@@ -131,7 +131,7 @@ namespace RogueLauncher.Rewrite
         public void UpdatePlayerHUDAbilities() { }
         [Rewrite]
         public void DrawRenderTargets() { }
-        
+
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
         public override void OnEnter()
         {
@@ -386,6 +386,14 @@ namespace RogueLauncher.Rewrite
         }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        public void DrawStep12(Camera2D camera, RenderStep step, GameTime gameTime)
+        {
+            camera.Draw(m_finalRenderTarget, Vector2.Zero, new Color(180, 150, 80));
+            m_creditsText.Draw(camera);
+            m_creditsTitleText.Draw(camera);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
         public void PrepareHUD(Camera2D camera, RenderStep step, GameTime gameTime)
         {
             if (CurrentRoom.Name != "Ending")
@@ -423,6 +431,32 @@ namespace RogueLauncher.Rewrite
         }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        public void PrepareNostalgiaDesaturate(Camera2D camera, RenderStep step, GameTime gameTime)
+        {
+            if (CurrentRoom.Name == "Ending" || Game.PlayerStats.TutorialComplete && Game.PlayerStats.Traits.X != 29f && Game.PlayerStats.Traits.Y != 29f)
+            {
+                step.Skip = true;
+            }
+            else if (step.Effect == Game.HSVEffect)
+            {
+                step.Effect.Parameters["Saturation"].SetValue(0.2f);
+                step.Effect.Parameters["Brightness"].SetValue(0.1f);
+            }
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        public void PrepareFinal(Camera2D camera, RenderStep step, GameTime gameTime)
+        {
+            if (CurrentRoom.Name != "Ending" && (Game.PlayerStats.Traits.X == 1f || Game.PlayerStats.Traits.Y == 1f) && Game.PlayerStats.SpecialItem != 8)
+            {
+                step.Effect = Game.HSVEffect;
+                step.Effect.Parameters["Saturation"].SetValue(0);
+                step.Effect.Parameters["Brightness"].SetValue(0);
+                step.Effect.Parameters["Contrast"].SetValue(0);
+            }
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
         public void PrepareShadowEffect(Camera2D camera, RenderStep step, GameTime gameTime)
         {
             step.Skip = !((CurrentLevelType == GameTypes.LevelType.DUNGEON || Game.PlayerStats.Traits.X == 35f || Game.PlayerStats.Traits.Y == 35f) && (Game.PlayerStats.Class != 13 || Game.PlayerStats.Class == 13 && !Player.LightOn));
@@ -443,17 +477,20 @@ namespace RogueLauncher.Rewrite
             _renderChain = new RogueAPI.ObjectChain<LevelRenderStep, RenderStep>();
 
             _renderChain.Push(LevelRenderStep.RoomBgToBack, new RenderStep(m_bgRenderTarget, samplerState: SamplerState.PointWrap, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { SetCameraTransform }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep1 }));
-            _renderChain.Push(LevelRenderStep.SkyBackToFront, new RenderStep(m_finalRenderTarget, samplerState: SamplerState.LinearClamp, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PrepareClearColor }, effect: Game.ParallaxEffect, shaderSteps: new[] { new RogueAPI.Game.ShaderStep(1, m_skyRenderTarget, SamplerState.LinearClamp) }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep2 }));
+            _renderChain.Push(LevelRenderStep.SkyBackToFront, new RenderStep(m_finalRenderTarget, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PrepareClearColor }, effect: Game.ParallaxEffect, shaderSteps: new[] { new RogueAPI.Game.ShaderStep(1, m_skyRenderTarget, SamplerState.LinearClamp) }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep2 }));
             _renderChain.Push(LevelRenderStep.RoomBgToFront, new RenderStep(m_finalRenderTarget, samplerState: SamplerState.PointClamp, rasterizerState: RasterizerState.CullNone, effect: Game.BWMaskEffect, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { SetCameraTransform }, shaderSteps: new[] { new RogueAPI.Game.ShaderStep(1, m_fgRenderTarget, SamplerState.PointClamp) }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep3 }));
             _renderChain.Push(LevelRenderStep.RoomFgToFront, new RenderStep(m_finalRenderTarget, samplerState: SamplerState.PointWrap, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { SetCameraTransform }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep4 }));
-            _renderChain.Push(LevelRenderStep.InvertFrontToBack, new RenderStep(m_bgRenderTarget, samplerState: SamplerState.LinearClamp, effect: Game.InvertShader, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PreparePausedEnemies }, shaderSteps: new[] { new RogueAPI.Game.ShaderStep(1, m_traitAuraRenderTarget) }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep5 }));
-            _renderChain.Push(LevelRenderStep.SaturateBackToFront, new RenderStep(m_finalRenderTarget, samplerState: SamplerState.LinearClamp, effect: Game.HSVEffect, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PreparePausedEnemies }, shaderSteps: new[] { new RogueAPI.Game.ShaderStep(1, m_traitAuraRenderTarget) }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep6 }));
+            _renderChain.Push(LevelRenderStep.InvertFrontToBack, new RenderStep(m_bgRenderTarget, effect: Game.InvertShader, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PreparePausedEnemies }, shaderSteps: new[] { new RogueAPI.Game.ShaderStep(1, m_traitAuraRenderTarget) }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep5 }));
+            _renderChain.Push(LevelRenderStep.SaturateBackToFront, new RenderStep(m_finalRenderTarget, effect: Game.HSVEffect, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PreparePausedEnemies }, shaderSteps: new[] { new RogueAPI.Game.ShaderStep(1, m_traitAuraRenderTarget) }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep6 }));
             _renderChain.Push(LevelRenderStep.PlayerObjectsToFront, new RenderStep(m_finalRenderTarget, samplerState: SamplerState.PointClamp, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { SetCameraTransform }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep7 }));
             _renderChain.Push(LevelRenderStep.TextToFront, new RenderStep(m_finalRenderTarget, samplerState: SamplerState.LinearWrap, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { SetCameraTransform }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep8 }));
-            _renderChain.Push(LevelRenderStep.DarknessToFront, new RenderStep(m_finalRenderTarget, samplerState: SamplerState.LinearClamp, effect: Game.ShadowEffect, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PrepareShadowEffect }, shaderSteps: new[] { new RogueAPI.Game.ShaderStep(1, m_lightSourceRenderTarget, SamplerState.LinearClamp) }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep9 }));
+            _renderChain.Push(LevelRenderStep.DarknessToFront, new RenderStep(m_finalRenderTarget, effect: Game.ShadowEffect, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PrepareShadowEffect }, shaderSteps: new[] { new RogueAPI.Game.ShaderStep(1, m_lightSourceRenderTarget, SamplerState.LinearClamp) }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep9 }));
             _renderChain.Push(LevelRenderStep.HUDToFront, new RenderStep(m_finalRenderTarget, samplerState: SamplerState.LinearWrap, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PrepareHUD }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep10 }));
             _renderChain.Push(LevelRenderStep.BorderToFront, new RenderStep(m_finalRenderTarget, samplerState: SamplerState.PointClamp, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep11 }));
-            _renderChain.Push(LevelRenderStep.ExtraFrontToBack, new RenderStep(m_bgRenderTarget, samplerState: SamplerState.LinearClamp, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep5 }));
+            _renderChain.Push(LevelRenderStep.ExtraFrontToBack, new RenderStep(m_bgRenderTarget, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep5 }));
+            _renderChain.Push(LevelRenderStep.NostalgiaBackToFront, new RenderStep(m_finalRenderTarget, effect: Game.HSVEffect, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PrepareNostalgiaDesaturate }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep6 }));
+            _renderChain.Push(LevelRenderStep.NostalgiaFrontToBack, new RenderStep(m_bgRenderTarget, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PrepareNostalgiaDesaturate }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep12 }));
+            _renderChain.Push(LevelRenderStep.BackToScreenFinal, new RenderStep((ScreenManager as RCScreenManager).RenderTarget, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PrepareFinal }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep6 }));
         }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
@@ -468,6 +505,7 @@ namespace RogueLauncher.Rewrite
                 step = step.Next;
             }
 
+            #region OldJunk
             //List<RogueAPI.Game.RenderStep> steps = new List<RogueAPI.Game.RenderStep>(new[] {
             //    new RogueAPI.Game.RenderStep(m_bgRenderTarget, samplerState: SamplerState.PointWrap, transformMatrix: Camera.GetTransformation(), drawSteps: new Action<Camera2D>[] { DrawStep1 }),
             //    new RogueAPI.Game.RenderStep(m_finalRenderTarget, samplerState: SamplerState.LinearClamp, clearColor: m_enemiesPaused ? Color.White : Color.Black, effect: Game.ParallaxEffect, shaderSteps: new [] { new RogueAPI.Game.ShaderStep(1, m_skyRenderTarget, SamplerState.LinearClamp) }, drawSteps: new Action<Camera2D>[] { DrawStep2 }),
@@ -515,6 +553,7 @@ namespace RogueLauncher.Rewrite
             //Camera.Draw(CurrentRoom.BGRender, Camera.TopLeftCorner, Color.White);
             //Camera.End();
 
+            //STEP4 - Draw Radii and projectiles
             //if (LevelEV.SHOW_ENEMY_RADII)
             //    Camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, null, null, null, Camera.GetTransformation());
             //else
@@ -530,14 +569,18 @@ namespace RogueLauncher.Rewrite
             //m_projectileManager.Draw(Camera);
             //Camera.End();
 
+
             //if (m_enemiesPaused)
             //{
+
+            //STEP5 - Invert front to back
             //    Camera.GraphicsDevice.SetRenderTarget(m_bgRenderTarget);
             //    Camera.GraphicsDevice.Textures[1] = m_traitAuraRenderTarget;
             //    Camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, null, Game.InvertShader);
             //    Camera.Draw(m_finalRenderTarget, Vector2.Zero, Color.White);
             //    Camera.End();
 
+            //STEP6 - Saturate Back to Front
             //    Game.HSVEffect.Parameters["Saturation"].SetValue(0);
             //    Game.HSVEffect.Parameters["UseMask"].SetValue(true);
             //    Camera.GraphicsDevice.SetRenderTarget(m_finalRenderTarget);
@@ -547,6 +590,7 @@ namespace RogueLauncher.Rewrite
             //    Camera.End();
             //}
 
+            //STEP7 - Player, items, effects
 
             //Camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, Camera.GetTransformation());
             //Camera.Draw(Game.GenericTexture, new Rectangle((int)Camera.TopLeftCorner.X, (int)Camera.TopLeftCorner.Y, 1320, 720), Color.Black * BackBufferOpacity);
@@ -564,7 +608,7 @@ namespace RogueLauncher.Rewrite
             //m_impactEffectPool.Draw(Camera);
             //Camera.End();
 
-
+            //STEP8 - Text
 
             //Camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearWrap, null, null, null, Camera.GetTransformation());
             //m_textManager.Draw(Camera);
@@ -575,6 +619,8 @@ namespace RogueLauncher.Rewrite
             //m_whiteBG.Draw(Camera);
             //Camera.End();
 
+
+            //STEP9 - Darkness
             //if ((CurrentLevelType == GameTypes.LevelType.DUNGEON || Game.PlayerStats.Traits.X == 35f || Game.PlayerStats.Traits.Y == 35f) && (Game.PlayerStats.Class != 13 || Game.PlayerStats.Class == 13 && !Player.LightOn))
             //{
             //    Camera.GraphicsDevice.Textures[1] = m_lightSourceRenderTarget;
@@ -588,6 +634,10 @@ namespace RogueLauncher.Rewrite
 
             //    Camera.End();
             //}
+
+
+
+            //STEP10 - HUD and map
             //if (CurrentRoom.Name != "Ending")
             //{
             //    if ((Game.PlayerStats.Traits.X == 3f || Game.PlayerStats.Traits.Y == 3f) && Game.PlayerStats.SpecialItem != 8)
@@ -634,6 +684,8 @@ namespace RogueLauncher.Rewrite
             //    m_filmGrain.Draw(Camera);
 
             //Camera.End();
+
+            //STEP11 - Black border
 
             //Camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null);
             //m_blackBorder1.Draw(Camera);
@@ -692,42 +744,42 @@ namespace RogueLauncher.Rewrite
             //}
             //else
             //    Camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, null, null);
+            #endregion
 
-            
-            if (CurrentRoom.Name != "Ending" && (!Game.PlayerStats.TutorialComplete || Game.PlayerStats.Traits.X == 29f || Game.PlayerStats.Traits.Y == 29f) && Game.PlayerStats.SpecialItem != 8)
-            {
-                Game.HSVEffect.Parameters["Saturation"].SetValue(0.2f);
-                Game.HSVEffect.Parameters["Brightness"].SetValue(0.1f);
+            //if (CurrentRoom.Name != "Ending" && (!Game.PlayerStats.TutorialComplete || Game.PlayerStats.Traits.X == 29f || Game.PlayerStats.Traits.Y == 29f) && Game.PlayerStats.SpecialItem != 8)
+            //{
+            //    Game.HSVEffect.Parameters["Saturation"].SetValue(0.2f);
+            //    Game.HSVEffect.Parameters["Brightness"].SetValue(0.1f);
 
-                Camera.GraphicsDevice.SetRenderTarget(m_finalRenderTarget);
-                Camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, null, Game.HSVEffect);
-                Camera.Draw(m_bgRenderTarget, Vector2.Zero, Color.White);
-                Camera.End();
+            //    Camera.GraphicsDevice.SetRenderTarget(m_finalRenderTarget);
+            //    Camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, null, Game.HSVEffect);
+            //    Camera.Draw(m_bgRenderTarget, Vector2.Zero, Color.White);
+            //    Camera.End();
 
-                Camera.GraphicsDevice.SetRenderTarget(m_bgRenderTarget);
-                Camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, null, null);
-                Camera.Draw(m_finalRenderTarget, Vector2.Zero, new Color(180, 150, 80));
-                m_creditsText.Draw(Camera);
-                m_creditsTitleText.Draw(Camera);
-                Camera.End();
-            }
+            //    Camera.GraphicsDevice.SetRenderTarget(m_bgRenderTarget);
+            //    Camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, null, null);
+            //    Camera.Draw(m_finalRenderTarget, Vector2.Zero, new Color(180, 150, 80));
+            //    m_creditsText.Draw(Camera);
+            //    m_creditsTitleText.Draw(Camera);
+            //    Camera.End();
+            //}
 
-            Effect effect = null;
+            //Effect effect = null;
+            //if (CurrentRoom.Name != "Ending" && (Game.PlayerStats.Traits.X == 1f || Game.PlayerStats.Traits.Y == 1f) && Game.PlayerStats.SpecialItem != 8)
+            //{
+            //    effect = Game.HSVEffect;
+            //    effect.Parameters["Saturation"].SetValue(0);
+            //    effect.Parameters["Brightness"].SetValue(0);
+            //    effect.Parameters["Contrast"].SetValue(0);
+            //}
 
-            if (CurrentRoom.Name != "Ending" && (Game.PlayerStats.Traits.X == 1f || Game.PlayerStats.Traits.Y == 1f) && Game.PlayerStats.SpecialItem != 8)
-            {
-                effect = Game.HSVEffect;
-                effect.Parameters["Saturation"].SetValue(0);
-                effect.Parameters["Brightness"].SetValue(0);
-                effect.Parameters["Contrast"].SetValue(0);
-            }
 
-            Camera.GraphicsDevice.SetRenderTarget((ScreenManager as RCScreenManager).RenderTarget);
+            //Camera.GraphicsDevice.SetRenderTarget((ScreenManager as RCScreenManager).RenderTarget);
 
-            Camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, null, effect);
+            //Camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, null, effect);
 
-            Camera.Draw(m_bgRenderTarget, Vector2.Zero, Color.White);
-            Camera.End();
+            //Camera.Draw(m_bgRenderTarget, Vector2.Zero, Color.White);
+            //Camera.End();
 
             base.Draw(gameTime);
         }

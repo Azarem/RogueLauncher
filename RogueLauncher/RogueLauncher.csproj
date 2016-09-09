@@ -114,6 +114,7 @@
     <Compile Include="Rewrite\ChestBonusRoomObj.cs" />
     <Compile Include="Rewrite\ClassType.cs" />
     <Compile Include="Rewrite\CreditsScreen.cs" />
+    <Compile Include="Rewrite\DeadZoneOptionsObj.cs" />
     <Compile Include="Rewrite\EnchantressScreen.cs" />
     <Compile Include="Rewrite\EndingRoomObj.cs" />
     <Compile Include="Rewrite\EnemyHUDObj.cs" />
@@ -137,6 +138,7 @@
     <Compile Include="Rewrite\LineageScreen.cs" />
     <Compile Include="Rewrite\MapObj.cs" />
     <Compile Include="Rewrite\MapScreen.cs" />
+    <Compile Include="Rewrite\OptionsObj.cs" />
     <Compile Include="Rewrite\PlayerHUDObj.cs" />
     <Compile Include="Rewrite\PlayerLineageData.cs" />
     <Compile Include="Rewrite\PlayerObj.cs" />
@@ -159,6 +161,7 @@
     <Compile Include="Rewrite\SpecialItemType.cs" />
     <Compile Include="Rewrite\SpellEV.cs" />
     <Compile Include="Rewrite\SpellType.cs" />
+    <Compile Include="Rewrite\TerrainObj.cs" />
     <Compile Include="Rewrite\TextManager.cs" />
     <Compile Include="Rewrite\TraitType.cs" />
     <Compile Include="Util.cs" />
@@ -202,9 +205,6 @@
   <ItemGroup>
     <Content Include="LauncherIcon.ico" />
     <EmbeddedResource Include="RogueAPI.dll" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="bundleconfig.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

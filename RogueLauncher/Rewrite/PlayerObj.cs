@@ -457,7 +457,7 @@ namespace RogueLauncher.Rewrite
                         else if (spellId == 7)
                         {
                             projectileObj.Rotation = 0f;
-                            projectileObj.RunDisplacerEffect(m_levelScreen.CurrentRoom, this);
+                            //projectileObj.RunDisplacerEffect(m_levelScreen.CurrentRoom, this);
                             projectileObj.KillProjectile();
                         }
 
@@ -1087,11 +1087,11 @@ namespace RogueLauncher.Rewrite
         {
             if (!LevelEV.CREATE_RETAIL_VERSION)
             {
-                if (InputManager.JustPressed(Keys.T, null))
-                {
-                    SoundManager.PlaySound(new string[] { "Fart1", "Fart2", "Fart3" });
-                    m_levelScreen.ImpactEffectPool.DisplayFartEffect(this);
-                }
+                //if (InputManager.JustPressed(Keys.T, null))
+                //{
+                //    SoundManager.PlaySound(new string[] { "Fart1", "Fart2", "Fart3" });
+                //    m_levelScreen.ImpactEffectPool.DisplayFartEffect(this);
+                //}
             }
 
             if (Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.MenuMap) && Game.PlayerStats.TutorialComplete && m_levelScreen.CurrentRoom.Name != "Start" && m_levelScreen.CurrentRoom.Name != "Boss" && m_levelScreen.CurrentRoom.Name != "ChallengeBoss")
@@ -1449,9 +1449,9 @@ namespace RogueLauncher.Rewrite
             //Flying
             if (State == (int)RogueAPI.Game.PlayerState.Flying || State == (int)RogueAPI.Game.PlayerState.Dragon)
             {
-                if (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerUp1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerUp2) || InputManager.Pressed(Buttons.LeftThumbstickUp, PlayerIndex.One))
+                if (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerUp1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerUp2) || InputSystem.InputManager.Pressed(Buttons.LeftThumbstickUp, PlayerIndex.One))
                     AccelerationY = -TotalMovementSpeed;
-                else if (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerDown1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerDown2) || InputManager.Pressed(Buttons.LeftThumbstickDown, PlayerIndex.One))
+                else if (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerDown1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerDown2) || InputSystem.InputManager.Pressed(Buttons.LeftThumbstickDown, PlayerIndex.One))
                     AccelerationY = TotalMovementSpeed;
                 else
                     AccelerationY = 0f;
