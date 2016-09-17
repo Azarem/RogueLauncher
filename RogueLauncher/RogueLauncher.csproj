@@ -132,6 +132,7 @@
     <Compile Include="Rewrite\GetItemScreen.cs" />
     <Compile Include="Rewrite\ImpactEffectPool.cs" />
     <Compile Include="Rewrite\ItemDropManager.cs" />
+    <Compile Include="Rewrite\KeyIconObj.cs" />
     <Compile Include="Rewrite\KeyIconTextObj.cs" />
     <Compile Include="Rewrite\LevelEV.cs" />
     <Compile Include="Rewrite\LineageObj.cs" />
@@ -208,9 +209,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"$(SolutionDir)ConfuserEx\Confuser.CLI.exe" -n -o="$(TargetDir)." "$(TargetPath)"
-del "$(TargetDir)AssemblyTranslator.dll"
-del "$(TargetDir)RogueAPI.dll"</PostBuildEvent>
+    <PostBuildEvent>"$(SolutionDir)ConfuserEx\Confuser.CLI.exe" -n -o="$(TargetDir)." "$(TargetPath)2"
+del "$(TargetDir)AssemblyTranslator2.dll"
+del "$(TargetDir)RogueAPI2.dll"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>"$(SolutionDir)ConfuserEx\Confuser.CLI.exe" -n -o="$(ProjectDir)." "$(SolutionDir)AssemblyTranslator\bin\$(ConfigurationName)\AssemblyTranslator.dll"

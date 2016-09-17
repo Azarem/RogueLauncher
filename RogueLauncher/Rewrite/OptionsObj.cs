@@ -93,7 +93,7 @@ namespace RogueLauncher.Rewrite
         [Rewrite]
         public virtual void HandleInput()
         {
-            if (InputManager.IsNewlyPressedOr(InputKeys.MenuCancel1, InputKeys.MenuCancel2))
+            if (InputManager.IsNewlyPressed(InputFlags.MenuCancel1 | InputFlags.MenuCancel2))
                 SoundManager.PlaySound("Options_Menu_Deselect");
         }
 

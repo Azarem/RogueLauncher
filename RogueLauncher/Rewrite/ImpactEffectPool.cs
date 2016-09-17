@@ -11,8 +11,8 @@ namespace RogueLauncher.Rewrite
         [Rewrite]
         private int m_poolSize;
 
-        [Rewrite]
-        private DS2DPool<SpriteObj> m_resourcePool;
+        [Rewrite(action: RewriteAction.Replace)]
+        private DS2DPool<RogueAPI.Effects.EffectSpriteInstance> m_resourcePool;
 
         [Rewrite]
         private bool m_isPaused;
@@ -31,6 +31,14 @@ namespace RogueLauncher.Rewrite
 
         [Rewrite]
         public int TotalPoolSize { get { return m_resourcePool.TotalPoolSize; } }
+
+
+        [Rewrite(action: RewriteAction.Replace)]
+        public ImpactEffectPool(int poolSize)
+        {
+            m_poolSize = poolSize;
+            m_resourcePool = new DS2DPool<RogueAPI.Effects.EffectSpriteInstance>();
+        }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
         public void SpellCastEffect(Vector2 pos, float angle, bool megaSpell)
@@ -118,7 +126,7 @@ namespace RogueLauncher.Rewrite
         public void DisplayFusRoDahText(Vector2 position) { }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
-        public SpriteObj CheckOut()
+        public RogueAPI.Effects.EffectSpriteInstance CheckOut()
         {
             return m_resourcePool.CheckOut();
         }

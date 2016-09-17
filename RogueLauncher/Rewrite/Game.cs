@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace RogueLauncher.Rewrite
@@ -85,55 +86,55 @@ namespace RogueLauncher.Rewrite
             string name;
             byte id;
 
-            foreach (var f in Type.GetType("RogueCastle.SpellType").GetFields())
-            {
-                name = f.Name;
-                if (name.StartsWith("Total"))
-                    continue;
+            //foreach (var f in Type.GetType("RogueCastle.SpellType").GetFields())
+            //{
+            //    name = f.Name;
+            //    if (name.StartsWith("Total"))
+            //        continue;
 
-                id = (byte)f.GetRawConstantValue();
-                var spell = RogueAPI.Spells.SpellDefinition.Register(new RogueAPI.Spells.SpellDefinition(id)
-                {
-                    Name = name,
-                    Projectile = SpellEV.GetProjData(id, null),
-                    DamageMultiplier = SpellEV.GetDamageMultiplier(id),
-                    Rarity = SpellEV.GetRarity(id),
-                    ManaCost = SpellEV.GetManaCost(id),
-                    MiscValue1 = SpellEV.GetXValue(id),
-                    MiscValue2 = SpellEV.GetYValue(id),
-                    DisplayName = SpellType.ToString(id),
-                    Icon = SpellType.Icon(id),
-                    Description = SpellType.Description(id)
-                });
+            //    id = (byte)f.GetRawConstantValue();
+            //    var spell = RogueAPI.Spells.SpellDefinition.Register(new RogueAPI.Spells.SpellDefinition(id)
+            //    {
+            //        Name = name,
+            //        Projectile = SpellEV.GetProjData(id, null),
+            //        DamageMultiplier = SpellEV.GetDamageMultiplier(id),
+            //        Rarity = SpellEV.GetRarity(id),
+            //        ManaCost = SpellEV.GetManaCost(id),
+            //        MiscValue1 = SpellEV.GetXValue(id),
+            //        MiscValue2 = SpellEV.GetYValue(id),
+            //        DisplayName = SpellType.ToString(id),
+            //        Icon = SpellType.Icon(id),
+            //        Description = SpellType.Description(id)
+            //    });
 
-                switch (id)
-                {
-                    case 1:
-                        spell.SoundList = new[] { "Cast_Dagger" };
-                        break;
+            //    switch (id)
+            //    {
+            //        case 1:
+            //            spell.SoundList = new[] { "Cast_Dagger" };
+            //            break;
 
-                    case 2:
-                        spell.SoundList = new[] { "Cast_Axe" };
-                        break;
+            //        case 2:
+            //            spell.SoundList = new[] { "Cast_Axe" };
+            //            break;
 
-                    case 5:
-                        spell.SoundList = new[] { "Cast_Crowstorm" };
-                        break;
+            //        case 5:
+            //            spell.SoundList = new[] { "Cast_Crowstorm" };
+            //            break;
 
-                    case 9:
-                        spell.SoundList = new[] { "Cast_Chakram" };
-                        break;
+            //        case 9:
+            //            spell.SoundList = new[] { "Cast_Chakram" };
+            //            break;
 
-                    case 10:
-                        spell.SoundList = new[] { "Spell_GiantSword" };
-                        break;
+            //        case 10:
+            //            spell.SoundList = new[] { "Spell_GiantSword" };
+            //            break;
 
-                    case 13:
-                    case 15:
-                        spell.SoundList = new[] { "Enemy_WallTurret_Fire_01", "Enemy_WallTurret_Fire_02", "Enemy_WallTurret_Fire_03", "Enemy_WallTurret_Fire_04" };
-                        break;
-                }
-            }
+            //        case 13:
+            //        case 15:
+            //            spell.SoundList = new[] { "Enemy_WallTurret_Fire_01", "Enemy_WallTurret_Fire_02", "Enemy_WallTurret_Fire_03", "Enemy_WallTurret_Fire_04" };
+            //            break;
+            //    }
+            //}
 
             //foreach (var f in Type.GetType("RogueCastle.ClassType").GetFields())
             //{
@@ -252,6 +253,13 @@ namespace RogueLauncher.Rewrite
             //RogueAPI.Core.AttachEffect = AttachEffect;
             RogueAPI.Core.GetCurrentRoomTerrainObjects = GetCurrentTerrainObjects;
             RogueAPI.Effects.EffectDefinition.AllocateSprite = AllocateSprite;
+            RogueAPI.Projectiles.ProjectileDefinition.AllocateProjectile = AllocateProjectile;
+            RogueAPI.Core.AttachPhysicsObject = AttachPhysicsObject;
+            RogueAPI.Core.ActiveEnemyCount = ActiveEnemyCount;
+            RogueAPI.Core.GetEnemyList = GetEnemyList;
+            RogueAPI.Core.GetTempEnemyList = GetTempEnemyList;
+            RogueAPI.Core.GetActiveProjectiles = GetProjectiles;
+            RogueAPI.Core.DisplayNumberString = DisplayNumberString;
             RogueAPI.Core.Initialize();
 
             Initialize();
@@ -392,6 +400,7 @@ namespace RogueLauncher.Rewrite
 
                         string key = line.Substring(0, index);
                         string value = line.Substring(index + 1);
+                        Keys k;
 
                         switch (key)
                         {
@@ -410,8 +419,16 @@ namespace RogueLauncher.Rewrite
                             case "KeyDOWN": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerDown1); break;
                             case "KeyLEFT": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerLeft1); break;
                             case "KeyRIGHT": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerRight1); break;
-                            case "KeyATTACK": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerAttack); break;
-                            case "KeyJUMP": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerJump1); break;
+                            case "KeyATTACK":
+                                k = (Keys)Enum.Parse(typeof(Keys), value);
+                                RogueAPI.Game.InputManager.MapKey(k, InputKeys.PlayerAttack);
+                                RogueAPI.Game.InputManager.MapKey(k, InputKeys.MenuConfirm2);
+                                break;
+                            case "KeyJUMP":
+                                k = (Keys)Enum.Parse(typeof(Keys), value);
+                                RogueAPI.Game.InputManager.MapKey(k, InputKeys.PlayerJump1);
+                                RogueAPI.Game.InputManager.MapKey(k, InputKeys.MenuCancel2);
+                                break;
                             case "KeySPECIAL": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerBlock); break;
                             case "KeyDASHLEFT": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerDashLeft); break;
                             case "KeyDASHRIGHT": RogueAPI.Game.InputManager.MapKey((Keys)Enum.Parse(typeof(Keys), value), InputKeys.PlayerDashRight); break;
@@ -429,8 +446,8 @@ namespace RogueLauncher.Rewrite
                         }
                     }
 
-                    RogueAPI.Game.InputManager.MapKey(RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerAttack), InputKeys.MenuConfirm2);
-                    RogueAPI.Game.InputManager.MapKey(RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerJump1), InputKeys.MenuCancel2);
+                    //RogueAPI.Game.InputManager.MapKey(RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerAttack), InputKeys.MenuConfirm2);
+                    //RogueAPI.Game.InputManager.MapKey(RogueAPI.Game.InputManager.GetMappedKey(InputKeys.PlayerJump1), InputKeys.MenuCancel2);
 
                     streamReader.Close();
 
@@ -523,15 +540,15 @@ namespace RogueLauncher.Rewrite
             }
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
-        protected static RogueAPI.Projectiles.ProjectileObj FireProjectile(RogueAPI.Projectiles.ProjectileDefinition proj, GameObj source, GameObj target)
-        {
-            var screen = Game.ScreenManager.CurrentScreen as ProceduralLevelScreen;
-            if (screen == null)
-                return null;
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        //protected static RogueAPI.Projectiles.ProjectileObj FireProjectile(RogueAPI.Projectiles.ProjectileDefinition proj, GameObj source, GameObj target)
+        //{
+        //    var screen = Game.ScreenManager.CurrentScreen as ProceduralLevelScreen;
+        //    if (screen == null)
+        //        return null;
 
-            return screen.ProjectileManager.FireProjectile(proj, source, target);
-        }
+        //    return screen.ProjectileManager.FireProjectile(proj, source, target);
+        //}
 
         //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
         //protected static void AttachEffect(RogueAPI.EffectType effect, GameObj target, Vector2? position)
@@ -567,15 +584,70 @@ namespace RogueLauncher.Rewrite
         }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
-        protected static SpriteObj AllocateSprite()
+        protected static void AttachPhysicsObject(PhysicsObj obj)
+        {
+            Game.ScreenManager.Player.AttachedLevel.PhysicsManager.AddObject(obj);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        protected static RogueAPI.Effects.EffectSpriteInstance AllocateSprite()
         {
             return Game.ScreenManager.Player.AttachedLevel.ImpactEffectPool.CheckOut();
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        protected static RogueAPI.Projectiles.ProjectileObj AllocateProjectile()
+        {
+            return Game.ScreenManager.Player.AttachedLevel.ProjectileManager.CheckOut();
         }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
         protected static void AttachEnemyToCurrentRoom(PhysicsObjContainer enemy)
         {
             Game.ScreenManager.Player.AttachedLevel.AddEnemyToCurrentRoom((EnemyObj)enemy);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        protected static int ActiveEnemyCount()
+        {
+            return Game.ScreenManager.Player.AttachedLevel.CurrentRoom.ActiveEnemies;
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        protected static bool KillableFilter(EnemyObj obj)
+        {
+            return !obj.NonKillable && !obj.IsKilled;
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        protected static IEnumerable<PhysicsObjContainer> GetEnemyList(bool killableOnly)
+        {
+            IEnumerable<EnemyObj> list = ScreenManager.Player.AttachedLevel.CurrentRoom.EnemyList;
+            if (killableOnly)
+                list = list.Where(KillableFilter);
+            return list;
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        protected static IEnumerable<PhysicsObjContainer> GetTempEnemyList(bool killableOnly)
+        {
+            IEnumerable<EnemyObj> list = ScreenManager.Player.AttachedLevel.CurrentRoom.TempEnemyList;
+            if (killableOnly)
+                list = list.Where(KillableFilter);
+            return list;
+        }
+
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        protected static IEnumerable<RogueAPI.Projectiles.ProjectileObj> GetProjectiles()
+        {
+            return Game.ScreenManager.Player.AttachedLevel.ProjectileManager.ActiveProjectileList;
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        protected static void DisplayNumberString(int number, string text, Color color, Vector2 position)
+        {
+            Game.ScreenManager.Player.AttachedLevel.TextManager.DisplayNumberStringText(number, text, color, position);
         }
 
         [Rewrite("RogueCastle.Game+SettingStruct")]

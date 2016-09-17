@@ -64,18 +64,18 @@ namespace RogueLauncher.Rewrite
 
         public override void HandleInput()
         {
-            if (InputManager.IsPressedOr(InputKeys.PlayerLeft1, InputKeys.PlayerLeft2) && InputManager.ThumbstickDeadzone - 1f >= 0f)
+            if (InputManager.IsPressed(InputFlags.PlayerLeft1 | InputFlags.PlayerLeft2) && InputManager.ThumbstickDeadzone - 1f >= 0f)
             {
                 InputManager.ThumbstickDeadzone -= 1f;
                 UpdateDeadZoneBar();
             }
-            else if (InputManager.IsPressedOr(InputKeys.PlayerRight1, InputKeys.PlayerRight2) && InputManager.ThumbstickDeadzone + 1f <= 95f)
+            else if ((InputManager.IsPressed(InputFlags.PlayerRight1 | InputFlags.PlayerRight2)) && InputManager.ThumbstickDeadzone + 1f <= 95f)
             {
                 InputManager.ThumbstickDeadzone += 1f;
                 UpdateDeadZoneBar();
             }
 
-            if (InputManager.IsNewlyPressedOr(InputKeys.MenuConfirm1, InputKeys.MenuConfirm2, InputKeys.MenuCancel1, InputKeys.MenuCancel2))
+            if (InputManager.IsNewlyPressed(InputFlags.MenuConfirm1 | InputFlags.MenuConfirm2 | InputFlags.MenuCancel1 | InputFlags.MenuCancel2))
                 IsActive = false;
 
             base.HandleInput();
