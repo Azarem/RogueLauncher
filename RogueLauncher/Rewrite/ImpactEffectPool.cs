@@ -1,6 +1,8 @@
 ﻿using AssemblyTranslator;
 using DS2DEngine;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using System;
 using System.Reflection;
 
 namespace RogueLauncher.Rewrite
@@ -20,7 +22,7 @@ namespace RogueLauncher.Rewrite
         [Rewrite]
         private bool m_isDisposed;
 
-        [Rewrite]
+        [Rewrite(action: RewriteAction.Replace)]
         public int ActiveTextObjs { get { return this.m_resourcePool.NumActiveObjs; } }
 
         [Rewrite]
@@ -29,7 +31,7 @@ namespace RogueLauncher.Rewrite
         [Rewrite]
         public bool IsDisposed { get { return this.m_isDisposed; } }
 
-        [Rewrite]
+        [Rewrite(action: RewriteAction.Replace)]
         public int TotalPoolSize { get { return m_resourcePool.TotalPoolSize; } }
 
 
@@ -46,6 +48,7 @@ namespace RogueLauncher.Rewrite
             RogueAPI.Effects.SpellCastEffect.Display(pos, angle);
         }
 
+
         [Rewrite]
         public void StartInverseEmit(Vector2 pos) { }
 
@@ -58,6 +61,45 @@ namespace RogueLauncher.Rewrite
         //{
         //    RogueAPI.Effects.ChestSparkleEffect.Display(position);
         //}
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Remove)]
+        public void DestroyAllEffects()
+        {
+            foreach (SpriteObj activeObjsList in m_resourcePool.ActiveObjsList)
+                activeObjsList.StopAnimation();
+        }
+
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void Initialize()
+        {
+            for (int i = 0; i < m_poolSize; i++)
+                m_resourcePool.AddToPool(new RogueAPI.Effects.EffectSpriteInstance("Blank_Sprite")
+                {
+                    AnimationDelay = 0.0333333351f,
+                    Visible = false,
+                    TextureColor = Color.White
+                });
+        }
+
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void IntroSmokeEffect(Vector2 position)
+        {
+            RogueAPI.Effects.BlackSmokeEffect.DisplayIntroSmoke(position);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplayPlayerImpactEffect(Vector2 position)
+        {
+            RogueAPI.Effects.ImpactEffect.Display(position, true);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplayMusicNote(Vector2 position)
+        {
+            RogueAPI.Effects.MusicNoteEffect.Display(position);
+        }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
         public void DisplayCriticalText(Vector2 position)
@@ -104,7 +146,7 @@ namespace RogueLauncher.Rewrite
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
         public void DisplayEnemyImpactEffect(Vector2 position)
         {
-            RogueAPI.Effects.EnemyImpactEffect.Display(position);
+            RogueAPI.Effects.ImpactEffect.Display(position);
         }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
@@ -113,17 +155,162 @@ namespace RogueLauncher.Rewrite
             RogueAPI.Effects.ExplosionEffect.Display(position);
         }
 
-        //[Rewrite]
-        //public void BlackSmokeEffect(GameObj obj) { }
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplayChestSparkleEffect(Vector2 position)
+        {
+            RogueAPI.Effects.ChestSparkleEffect.Display(position);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void CrowSmokeEffect(Vector2 position)
+        {
+            RogueAPI.Effects.BlackSmokeEffect.DisplayCrowSmoke(position);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplayBlockImpactEffect(Vector2 position, Vector2 scale)
+        {
+            RogueAPI.Effects.BlockImpactEffect.Display(position, scale);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplaySpawnEffect(Vector2 position)
+        {
+            RogueAPI.Effects.SpawnEffect.Display(position);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplayTeleportEffect(Vector2 position)
+        {
+            RogueAPI.Effects.TeleportRockEffect.Display(position);
+            RogueAPI.Effects.TeleportBeamEffect.Display(position);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void CrowDestructionEffect(Vector2 position)
+        {
+            RogueAPI.Effects.BlackSmokeEffect.DisplayCrowDestruction(position);
+            RogueAPI.Effects.CrowFeatherEffect.Display(position);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplayFusRoDahText(Vector2 position)
+        {
+            RogueAPI.Effects.FusRoDahTextEffect.Display(position);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplayQuestionMark(Vector2 position)
+        {
+            RogueAPI.Effects.QuestionMarkEffect.Display(position);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void BlackSmokeEffect(GameObj obj)
+        {
+            RogueAPI.Effects.BlackSmokeEffect.Display(obj);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void BlackSmokeEffect(Vector2 pos, Vector2 scale)
+        {
+            RogueAPI.Effects.BlackSmokeEffect.Display(pos, scale: scale.X, longerDuration: true, furtherDrift: true);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DoorSparkleEffect(Rectangle rect)
+        {
+            RogueAPI.Effects.DoorSparkleEffect.Display(rect);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplayFartEffect(GameObj obj)
+        {
+            RogueAPI.Effects.DustEffect.DisplayFart(obj);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplayTanookiEffect(GameObj obj)
+        {
+            RogueAPI.Effects.TanukiEffect.Display(obj.Position);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplayFountainShatterSmoke(GameObj sprite)
+        {
+            RogueAPI.Effects.FountainShatterSmokeEffect.Display(sprite);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Remove)]
+        public SpriteObj DisplayEffect(Vector2 position, string spriteName)
+        {
+            var proj = m_resourcePool.CheckOut();
+            proj.ChangeSprite(spriteName);
+            proj.TextureColor = Color.White;
+            proj.Visible = true;
+            proj.Position = position;
+            proj.PlayAnimation(false);
+            return proj;
+        }
 
 
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void Draw(Camera2D camera)
+        {
+            for (int i = 0; i < m_resourcePool.ActiveObjsList.Count; i++)
+            {
+                if (m_resourcePool.ActiveObjsList[i].IsAnimating || m_isPaused)
+                    m_resourcePool.ActiveObjsList[i].Draw(camera);
+                else
+                {
+                    DestroyEffect(m_resourcePool.ActiveObjsList[i]);
+                    i--;
+                }
+            }
+        }
 
-        [Rewrite]
-        public void DisplayFartEffect(GameObj obj) { }
-        [Rewrite]
-        public void Draw(Camera2D camera) { }
-        [Rewrite]
-        public void DisplayFusRoDahText(Vector2 position) { }
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DestroyEffect(RogueAPI.Effects.EffectSpriteInstance obj)
+        {
+            obj.OutlineWidth = 0;
+            obj.Visible = false;
+            obj.Rotation = 0f;
+            obj.TextureColor = Color.White;
+            obj.Opacity = 1f;
+            m_resourcePool.CheckIn(obj);
+            obj.Flip = SpriteEffects.None;
+            obj.Scale = new Vector2(1f);
+            obj.AnimationDelay = 0.0333333351f;
+        }
+
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void Dispose()
+        {
+            if (!IsDisposed)
+            {
+                Console.WriteLine("Disposing Impact Effect Pool");
+                m_isDisposed = true;
+                m_resourcePool.Dispose();
+                m_resourcePool = null;
+            }
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void PauseAllAnimations()
+        {
+            m_isPaused = true;
+            foreach (SpriteObj activeObjsList in m_resourcePool.ActiveObjsList)
+                activeObjsList.PauseAnimation();
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void ResumeAllAnimations()
+        {
+            m_isPaused = false;
+            foreach (SpriteObj activeObjsList in m_resourcePool.ActiveObjsList)
+                activeObjsList.ResumeAnimation();
+        }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
         public RogueAPI.Effects.EffectSpriteInstance CheckOut()

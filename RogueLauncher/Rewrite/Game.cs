@@ -650,6 +650,14 @@ namespace RogueLauncher.Rewrite
             Game.ScreenManager.Player.AttachedLevel.TextManager.DisplayNumberStringText(number, text, color, position);
         }
 
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        protected virtual void Update(GameTime gameTime)
+        {
+            Update(gameTime);
+            RogueAPI.Game.InputManager.Update();
+        }
+
+
         [Rewrite("RogueCastle.Game+SettingStruct")]
         public struct SettingStruct
         {

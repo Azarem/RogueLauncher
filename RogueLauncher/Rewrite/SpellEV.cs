@@ -13,20 +13,20 @@ namespace RogueLauncher.Rewrite
         //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "RewriteGetProjData")]
         //public static RogueAPI.Projectiles.ProjectileInstance GetProjData(byte id, GameObj source) { return SpellDefinition.GetById(id).GetProjectileInstance(source); }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
-        public static float GetDamageMultiplier(byte id) { return SpellDefinition.GetById(id).DamageMultiplier; }
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        //public static float GetDamageMultiplier(byte id) { return SpellDefinition.GetById(id).DamageMultiplier; }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
-        public static int GetRarity(byte id) { return SpellDefinition.GetById(id).Rarity; }
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        //public static int GetRarity(byte id) { return SpellDefinition.GetById(id).Rarity; }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
-        public static int GetManaCost(byte id) { return SpellDefinition.GetById(id).ManaCost; }
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        //public static int GetManaCost(byte id) { return SpellDefinition.GetById(id).ManaCost; }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
-        public static float GetXValue(byte id) { return SpellDefinition.GetById(id).MiscValue1; }
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        //public static float GetXValue(byte id) { return SpellDefinition.GetById(id).MiscValue1; }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
-        public static float GetYValue(byte id) { return SpellDefinition.GetById(id).MiscValue2; }
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        //public static float GetYValue(byte id) { return SpellDefinition.GetById(id).MiscValue2; }
 
 
         //public static void RewriteGetProjData(MethodGraph projMethod, MethodGraph newMethod)

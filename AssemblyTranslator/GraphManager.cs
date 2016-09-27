@@ -22,7 +22,10 @@ namespace AssemblyTranslator
         private Assembly _callingAssembly;
         private Assembly rewriteAssembly;
 
+        //internal HashSet<MemberInfo> _constructorReferences = new HashSet<MemberInfo>();
+
         private List<TypeRewrite> _typeRewrites = new List<TypeRewrite>();
+        internal List<MethodInfo> _staticImplCache = new List<MethodInfo>();
         //private Module currentModule;
         //private Assembly asm;
 
@@ -133,7 +136,9 @@ namespace AssemblyTranslator
         {
             foreach (var t in rewriteAssembly.GetTypes())
             {
+                bool forceImplRewrite = t.Name.StartsWith("<PrivateImplementationDetails>");
                 var repl = t.GetCustomAttribute<RewriteAttribute>(false);
+
                 TypeGraph typeTarget = null;
                 TypeRewrite typeRewrite = null;
                 if (repl != null)
@@ -151,6 +156,12 @@ namespace AssemblyTranslator
 
                 foreach (var m in t.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
+                    if (forceImplRewrite)
+                    {
+                        if (m is MethodInfo)
+                            _staticImplCache.Add(m as MethodInfo);
+                    }
+
                     var mRep = m.GetCustomAttribute<RewriteAttribute>();
                     if (mRep == null)
                         continue;
@@ -173,6 +184,8 @@ namespace AssemblyTranslator
 
                         if (mRep.action == RewriteAction.Add)
                             newTarget = new MethodGraph(mb, mTypeTarget);
+                        else if (mRep.action == RewriteAction.Remove)
+                            target.DeclaringObject = null;
                         else if (mRep.action != RewriteAction.None)
                         {
                             newTarget = target.SwitchImpl(mb, mRep.newName, mRep.oldName);
@@ -213,7 +226,17 @@ namespace AssemblyTranslator
                             oldGet = target._getAccessor != null ? mTypeTarget.Methods.FirstOrDefault(x => x._sourceObject == target._getAccessor) : null;
                             oldSet = target._setAccessor != null ? mTypeTarget.Methods.FirstOrDefault(x => x._sourceObject == target._setAccessor) : null;
 
-                            if (mRep.action != RewriteAction.None)
+                            if (mRep.action == RewriteAction.Remove)
+                            {
+                                if (oldGet != null)
+                                    oldGet.DeclaringObject = null;
+
+                                if (oldSet != null)
+                                    oldSet.DeclaringObject = null;
+
+                                target.DeclaringObject = null;
+                            }
+                            else if (mRep.action != RewriteAction.None)
                             {
                                 newTarget = new PropertyGraph(p, mTypeTarget);
                                 newTarget.Source = target.Source;
@@ -262,11 +285,19 @@ namespace AssemblyTranslator
                         var target = mTypeTarget.Fields.FirstOrDefault(x => x.Name == name);
                         FieldGraph newTarget = null;
 
-                        if (mRep.action == RewriteAction.Add)
-                            newTarget = new FieldGraph(f, mTypeTarget);
+                        if (mRep.action == RewriteAction.Remove)
+                            target.DeclaringObject = null;
                         else if (mRep.action != RewriteAction.None)
                         {
-                            //TODO
+                            newTarget = new FieldGraph(f, mTypeTarget);
+
+                            if (mRep.action == RewriteAction.Replace)
+                            {
+                                newTarget.Source = target.Source;
+                                target.DeclaringObject = null;
+                            }
+                            else if (mRep.action == RewriteAction.Swap)
+                                target.Name += "_Orig";
                         }
 
                         if (mRep.contentHandler != null)
@@ -479,6 +510,10 @@ namespace AssemblyTranslator
         }
         internal FieldInfo GetField(FieldInfo info)
         {
+            if (info.Name == "m_resourcePool")
+            {
+
+            }
             FieldInfo newField;
             if (fieldCache.TryGetValue(info, out newField))
                 return newField;

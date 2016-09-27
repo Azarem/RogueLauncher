@@ -11,6 +11,7 @@ namespace AssemblyTranslator
         None,
         Replace,
         Swap,
-        Add
+        Add,
+        Remove
     }
 }

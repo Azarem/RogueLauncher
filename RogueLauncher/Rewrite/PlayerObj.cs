@@ -110,6 +110,8 @@ namespace RogueLauncher.Rewrite
         [Rewrite]
         private bool m_collidingRight;
         [Rewrite]
+        private byte m_numSequentialAttacks;
+        [Rewrite]
         private LogicSet m_standingAttack3LogicSet;
         [Rewrite]
         private SpriteObj m_playerLegs;
@@ -132,9 +134,14 @@ namespace RogueLauncher.Rewrite
         [Rewrite]
         private float m_currentMana;
         [Rewrite]
+        private Vector2 m_enemyKnockBack = Vector2.Zero;
+        [Rewrite]
         public int MaxHealth { get { return 0; } }
         [Rewrite]
-        public float MaxMana { get {
+        public float MaxMana
+        {
+            get
+            {
 
                 return Player.Instance.GetStatObject(ManaStat.Id).MaxValue;
 
@@ -153,7 +160,8 @@ namespace RogueLauncher.Rewrite
                 //    num = 1;
                 //}
                 //return (float)num;
-            } }
+            }
+        }
         [Rewrite]
         public int Damage { get { return 0; } }
         [Rewrite]
@@ -252,6 +260,17 @@ namespace RogueLauncher.Rewrite
         }
 
         [Rewrite]
+        public byte NumSequentialAttacks { get { return m_numSequentialAttacks; } set { m_numSequentialAttacks = value; } }
+        [Rewrite]
+        public int NumAirBounces { get; set; }
+        [Rewrite]
+        public float AirAttackKnockBack { get; internal set; }
+        [Rewrite]
+        private Vector2 StrongEnemyKnockBack { get; set; }
+        [Rewrite]
+        public Vector2 EnemyKnockBack { get { return (m_currentLogicSet == m_standingAttack3LogicSet) ? StrongEnemyKnockBack : m_enemyKnockBack; } set { m_enemyKnockBack = value; } }
+
+        [Rewrite]
         public void UpdateEquipmentColours() { }
 
 
@@ -309,32 +328,71 @@ namespace RogueLauncher.Rewrite
         [Rewrite]
         public void UpdateInternalScale() { }
 
-        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.None)]
-        //public void CastSpell(bool activateSecondary, bool megaSpell = false)
-        //{
-        //}
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void CastSpell(bool activateSecondary, bool megaSpell = false)
+        {
+        }
 
-        [Rewrite]
-        public void StopAllSpells() { }
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void StopAllSpells()
+        {
+            var spell = RogueAPI.Game.Player.Spell;
+            if (spell != null)
+                spell.Deactivate(true);
+
+            if (base.State == 8)
+            {
+                this.DeactivateTanooki();
+            }
+            if (this.m_damageShieldCast)
+            {
+                this.m_damageShieldCast = false;
+                this.m_megaDamageShieldCast = false;
+            }
+            if (this.m_timeStopCast)
+            {
+                this.AttachedLevel.StopTimeStop();
+                this.m_timeStopCast = false;
+            }
+            if (this.m_assassinSpecialActive)
+            {
+                this.DisableAssassinAbility();
+            }
+            this.m_lightOn = false;
+            //this.m_translocatorSprite.Visible = false;
+            if (base.State == 9)
+            {
+                base.State = 2;
+                base.DisableGravity = false;
+                this.m_isFlying = false;
+            }
+        }
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
         public override void Draw(Camera2D camera)
         {
+            var evt = new RogueAPI.PlayerDrawEventArgs(this, camera, true);
+            RogueAPI.Event.Trigger(evt);
+
             m_swearBubble.Scale = new Vector2(ScaleX * 1.2f, ScaleY * 1.2f);
             m_swearBubble.Position = new Vector2(base.X - 30f * ScaleX, base.Y - 35f * ScaleX);
             m_swearBubble.Draw(camera);
-            m_translocatorSprite.Draw(camera);
+            //m_translocatorSprite.Draw(camera);
+
             base.Draw(camera);
+
+            evt.IsPreDraw = false;
+            RogueAPI.Event.Trigger(evt);
+
             if (IsFlying && State != 9)
             {
                 m_flightDurationText.Text = string.Format("{0:F1}", m_flightCounter);
-                TextObj mFlightDurationText = m_flightDurationText;
-                float x = base.X;
-                Rectangle terrainBounds = TerrainBounds;
-                mFlightDurationText.Position = new Vector2(x, (float)(terrainBounds.Top - 70));
+                m_flightDurationText.Position = new Vector2(X, TerrainBounds.Top - 70);
                 m_flightDurationText.Draw(camera);
             }
+
             camera.End();
+
             Game.ColourSwapShader.Parameters["desiredTint"].SetValue(m_playerHead.TextureColor.ToVector4());
 
             var args = RogueAPI.Game.Player.PipeSkinShaderArgs(m_levelScreen, this);
@@ -371,6 +429,7 @@ namespace RogueLauncher.Rewrite
             camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, Game.ColourSwapShader, camera.GetTransformation());
             m_playerHead.Draw(camera);
             camera.End();
+
             camera.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null, camera.GetTransformation());
             if (Game.PlayerStats.IsFemale)
             {
@@ -844,94 +903,97 @@ namespace RogueLauncher.Rewrite
             }
             if (Game.PlayerStats.TutorialComplete)
             {
-                bool flag1 = false;
-                if (Game.PlayerStats.Spell == 15 && (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerAttack) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerSpell1)) && m_rapidSpellCastDelay <= 0f)
-                {
-                    m_rapidSpellCastDelay = 0.2f;
-                    CastSpell(false, false);
-                    flag1 = true;
-                }
+                var evt = new RogueAPI.InputEventHandler();
+                RogueAPI.Event.Trigger(evt);
 
-                if ((m_spellCastDelay <= 0f || Game.PlayerStats.Class == 16) && (Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerSpell1) || Game.PlayerStats.Class == 16 && Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerAttack)) && (Game.PlayerStats.Class != 16 || !flag1))
-                    CastSpell(false, false);
+                //bool flag1 = false;
+                //if (Game.PlayerStats.Spell == 15 && (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerAttack) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerSpell1)) && m_rapidSpellCastDelay <= 0f)
+                //{
+                //    m_rapidSpellCastDelay = 0.2f;
+                //    CastSpell(false, false);
+                //    flag1 = true;
+                //}
 
-                if (Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerBlock))
-                {
-                    RoomObj currentRoom = m_levelScreen.CurrentRoom;
-                    if (currentRoom is CarnivalShoot1BonusRoom || currentRoom is CarnivalShoot2BonusRoom || currentRoom is ChestBonusRoomObj)
-                    {
-                        if (State == (int)RogueAPI.Game.PlayerState.Tanuki)
-                            DeactivateTanooki();
-                    }
-                    else
-                    {
-                        RogueAPI.Event<RogueAPI.KeyPressEventArgs>.Trigger(new RogueAPI.KeyPressEventArgs(RogueAPI.Game.InputKeys.PlayerBlock));
+                //if ((m_spellCastDelay <= 0f || Game.PlayerStats.Class == 16) && (Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerSpell1) || Game.PlayerStats.Class == 16 && Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerAttack)) && (Game.PlayerStats.Class != 16 || !flag1))
+                //    CastSpell(false, false);
 
-                        if (Game.PlayerStats.Class == 14 && m_spellCastDelay <= 0f)
-                            CastSpell(false, true);
-                        else if (Game.PlayerStats.Class == 15)
-                            ConvertHPtoMP();
-                        else if (Game.PlayerStats.Class == 11 && CurrentMana > 0f)
-                        {
-                            if (m_assassinSpecialActive)
-                                DisableAssassinAbility();
-                            else
-                                ActivateAssassinAbility();
-                        }
-                        else if (Game.PlayerStats.Class == 9)
-                            SwapSpells();
-                        else if (Game.PlayerStats.Class == 12)
-                            NinjaTeleport();
-                        else if (Game.PlayerStats.Class == 8)
-                        {
-                            if (State == (int)RogueAPI.Game.PlayerState.Tanuki)
-                                DeactivateTanooki();
-                            else if (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerDown1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerDown2))
-                                ActivateTanooki();
-                        }
-                        //else if (Game.PlayerStats.Class == 10)
-                        //    CastFuhRohDah();
-                        else if (Game.PlayerStats.Class == 17 && CurrentMana >= 30f && m_spellCastDelay <= 0f)
-                        {
-                            PlayerObj currentMana = this;
-                            currentMana.CurrentMana = currentMana.CurrentMana - 30f;
-                            m_spellCastDelay = 0.5f;
-                            ThrowAxeProjectiles();
-                        }
+                //if (Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerBlock))
+                //{
+                //    RoomObj currentRoom = m_levelScreen.CurrentRoom;
+                //    if (currentRoom is CarnivalShoot1BonusRoom || currentRoom is CarnivalShoot2BonusRoom || currentRoom is ChestBonusRoomObj)
+                //    {
+                //        if (State == (int)RogueAPI.Game.PlayerState.Tanuki)
+                //            DeactivateTanooki();
+                //    }
+                //    else
+                //    {
+                //        RogueAPI.Event<RogueAPI.KeyPressEventArgs>.Trigger(new RogueAPI.KeyPressEventArgs(RogueAPI.Game.InputKeys.PlayerBlock));
 
-                        if (Game.PlayerStats.Class == 16)
-                        {
-                            if (State == (int)RogueAPI.Game.PlayerState.Dragon)
-                            {
-                                State = (int)RogueAPI.Game.PlayerState.Jumping;
-                                base.DisableGravity = false;
-                                m_isFlying = false;
-                            }
-                            else
-                            {
-                                State = (int)RogueAPI.Game.PlayerState.Dragon;
-                                base.DisableGravity = true;
-                                m_isFlying = true;
-                                AccelerationY = 0f;
-                            }
-                        }
-                        else if (Game.PlayerStats.Class == 13)
-                        {
-                            if (!m_lightOn)
-                            {
-                                SoundManager.PlaySound("HeadLampOn");
-                                m_lightOn = true;
-                                _objectList[16].Visible = true;
-                            }
-                            else
-                            {
-                                SoundManager.PlaySound("HeadLampOff");
-                                m_lightOn = false;
-                                _objectList[16].Visible = false;
-                            }
-                        }
-                    }
-                }
+                //        if (Game.PlayerStats.Class == 14 && m_spellCastDelay <= 0f)
+                //            CastSpell(false, true);
+                //        else if (Game.PlayerStats.Class == 15)
+                //            ConvertHPtoMP();
+                //        else if (Game.PlayerStats.Class == 11 && CurrentMana > 0f)
+                //        {
+                //            if (m_assassinSpecialActive)
+                //                DisableAssassinAbility();
+                //            else
+                //                ActivateAssassinAbility();
+                //        }
+                //        else if (Game.PlayerStats.Class == 9)
+                //            SwapSpells();
+                //        else if (Game.PlayerStats.Class == 12)
+                //            NinjaTeleport();
+                //        else if (Game.PlayerStats.Class == 8)
+                //        {
+                //            if (State == (int)RogueAPI.Game.PlayerState.Tanuki)
+                //                DeactivateTanooki();
+                //            else if (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerDown1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerDown2))
+                //                ActivateTanooki();
+                //        }
+                //        //else if (Game.PlayerStats.Class == 10)
+                //        //    CastFuhRohDah();
+                //        else if (Game.PlayerStats.Class == 17 && CurrentMana >= 30f && m_spellCastDelay <= 0f)
+                //        {
+                //            PlayerObj currentMana = this;
+                //            currentMana.CurrentMana = currentMana.CurrentMana - 30f;
+                //            m_spellCastDelay = 0.5f;
+                //            ThrowAxeProjectiles();
+                //        }
+
+                //        if (Game.PlayerStats.Class == 16)
+                //        {
+                //            if (State == (int)RogueAPI.Game.PlayerState.Dragon)
+                //            {
+                //                State = (int)RogueAPI.Game.PlayerState.Jumping;
+                //                base.DisableGravity = false;
+                //                m_isFlying = false;
+                //            }
+                //            else
+                //            {
+                //                State = (int)RogueAPI.Game.PlayerState.Dragon;
+                //                base.DisableGravity = true;
+                //                m_isFlying = true;
+                //                AccelerationY = 0f;
+                //            }
+                //        }
+                //        else if (Game.PlayerStats.Class == 13)
+                //        {
+                //            if (!m_lightOn)
+                //            {
+                //                SoundManager.PlaySound("HeadLampOn");
+                //                m_lightOn = true;
+                //                _objectList[16].Visible = true;
+                //            }
+                //            else
+                //            {
+                //                SoundManager.PlaySound("HeadLampOff");
+                //                m_lightOn = false;
+                //                _objectList[16].Visible = false;
+                //            }
+                //        }
+                //    }
+                //}
 
                 if (Game.PlayerStats.Class == 16 && (Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerJump1) || Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerJump2)))
                 {

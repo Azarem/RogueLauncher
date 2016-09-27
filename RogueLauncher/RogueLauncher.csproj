@@ -130,6 +130,7 @@
     <Compile Include="Rewrite\GameUtil.cs" />
     <Compile Include="Rewrite\GaussianBlur.cs" />
     <Compile Include="Rewrite\GetItemScreen.cs" />
+    <Compile Include="Rewrite\IDealsDamageObj.cs" />
     <Compile Include="Rewrite\ImpactEffectPool.cs" />
     <Compile Include="Rewrite\ItemDropManager.cs" />
     <Compile Include="Rewrite\KeyIconObj.cs" />
@@ -150,7 +151,7 @@
     <Compile Include="Rewrite\Program.cs" />
     <Compile Include="Rewrite\ProjectileIconPool.cs" />
     <Compile Include="Rewrite\ProjectileManager.cs" />
-    <Compile Include="Rewrite\ProjectileObj.cs" />
+    <None Include="Rewrite\ProjectileObj.cs" />
     <Compile Include="Rewrite\RCScreenManager.cs" />
     <Compile Include="Rewrite\RoomObj.cs" />
     <Compile Include="Rewrite\SaveGameManager.cs" />

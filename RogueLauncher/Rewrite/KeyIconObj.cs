@@ -11,5 +11,8 @@ namespace RogueLauncher.Rewrite
         public void SetButton(Buttons button) { }
         [Rewrite]
         public void SetKey(Keys? key, bool upperCase = true) { }
+
+        [Rewrite]
+        public KeyIconObj() { }
     }
 }

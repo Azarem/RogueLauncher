@@ -21,14 +21,14 @@ namespace AssemblyTranslator.Graphs
 
         public List<CustomAttributeGraph> CustomAttributes { get { return _customAttributes; } }
 
-        public ObjectGraph() :this(null) { }
+        public ObjectGraph() : this(null) { }
         public ObjectGraph(TSource source) { _sourceObject = source; }
 
 
 
         protected void SetAttributeData(IEnumerable<CustomAttributeData> attributes)
         {
-            _customAttributes.AddRange(attributes.Where(x => x.AttributeType != typeof(RewriteAttribute)).Select(x => new CustomAttributeGraph(x)));
+            _customAttributes.AddRange(attributes.Where(x => x.AttributeType != typeof(RewriteAttribute) && x.AttributeType != typeof(ObfuscationAttribute)).Select(x => new CustomAttributeGraph(x)));
         }
 
 

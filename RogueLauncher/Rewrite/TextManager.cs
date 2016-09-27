@@ -11,5 +11,7 @@ namespace RogueLauncher.Rewrite
         public void DisplayNumberStringText(int amount, string text, Color color, Vector2 position) { }
         [Rewrite]
         public void Draw(Camera2D camera) { }
+        [Rewrite]
+        public void DisplayNumberText(int amount, Color color, Vector2 position) { }
     }
 }

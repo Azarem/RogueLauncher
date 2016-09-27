@@ -162,7 +162,8 @@ namespace AssemblyTranslator.Graphs
                         if (p.Length + 1 != m._parameters.Count)
                             return false;
 
-                        return p.All(y => m._parameters[y.Position + 1].ParameterType == y.ParameterType);
+                        return p.All(y => y.ParameterType.IsAssignableFrom(m._parameters[y.Position + 1].ParameterType));
+                        //return p.All(y => m._parameters[y.Position + 1].ParameterType == y.ParameterType);
                     }) as MethodBase);
             }
         }

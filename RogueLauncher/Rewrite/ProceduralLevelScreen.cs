@@ -493,6 +493,9 @@ namespace RogueLauncher.Rewrite
             _renderChain.Push(LevelRenderStep.BackToScreenFinal, new RenderStep((ScreenManager as RCScreenManager).RenderTarget, preSteps: new Action<Camera2D, RenderStep, GameTime>[] { PrepareFinal }, drawSteps: new Action<Camera2D, RenderStep, GameTime>[] { DrawStep6 }));
         }
 
+        [Rewrite]
+        public void SetLastEnemyHit(EnemyObj enemy) { }
+
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
         public override void Draw(GameTime gameTime)
         {

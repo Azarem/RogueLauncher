@@ -37,6 +37,22 @@ namespace AssemblyTranslator.Graphs
             translator.SetModule(_sourceObject ?? _builder, _builder);
             translator.CurrentModuleBuilder = _builder;
 
+            if (translator._staticImplCache.Count > 0)
+            {
+                var tGraph = new TypeGraph(null, null, this)
+                {
+                    Name = "<ImplSplice>",
+                    FullName = "<ImplSplice>",
+                    BaseType = typeof(object),
+                    Attributes = TypeAttributes.Sealed
+                };
+
+                foreach (var i in translator._staticImplCache)
+                    new MethodGraph(i, tGraph);
+
+                translator._staticImplCache.Clear();
+            }
+
             foreach (var t in _typeGraphs)
                 t.DeclareType(translator);
         }
@@ -64,7 +80,7 @@ namespace AssemblyTranslator.Graphs
             foreach (var t in _typeGraphs)
                 t.DefineCode(translator);
         }
-        
+
         internal void CreateTypes()
         {
             foreach (var t in _typeGraphs)
