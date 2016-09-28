@@ -49,9 +49,6 @@ namespace RogueLauncher.Rewrite
         }
 
 
-        [Rewrite]
-        public void StartInverseEmit(Vector2 pos) { }
-
         //[Rewrite]
         //public void DisplayQuestionMark(Vector2 pos) { }
 
@@ -240,6 +237,98 @@ namespace RogueLauncher.Rewrite
         {
             RogueAPI.Effects.FountainShatterSmokeEffect.Display(sprite);
         }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void MegaTeleport(Vector2 pos, Vector2 scale)
+        {
+            RogueAPI.Effects.MegaTeleportEffect.Display(pos, scale);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void MegaTeleportReverse(Vector2 pos, Vector2 scale)
+        {
+            RogueAPI.Effects.MegaTeleportReverseEffect.Display(pos, scale);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplayFireParticleEffect(GameObj sprite)
+        {
+            RogueAPI.Effects.FireParticleEffect.Display(sprite);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DisplayIceParticleEffect(GameObj sprite)
+        {
+            RogueAPI.Effects.IceParticleEffect.Display(sprite);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void TurretFireEffect(Vector2 pos, Vector2 scale)
+        {
+            RogueAPI.Effects.DustEffect.DisplayTurretFire(pos, scale.X);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void StartInverseEmit(Vector2 pos)
+        {
+            RogueAPI.Effects.InverseEmitEffect.Display(pos);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void SkillTreeDustEffect(Vector2 pos, bool horizontal, float length)
+        {
+            RogueAPI.Effects.SkillTreeDustEffect.Display(pos, horizontal, length);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void AssassinCastEffect(Vector2 pos)
+        {
+            RogueAPI.Effects.AssassinSmokeEffect.Display(pos);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void WoodChipEffect(Vector2 pos)
+        {
+            RogueAPI.Effects.WoodChipEffect.Display(pos);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void StartTranslocateEmit(Vector2 pos)
+        {
+            RogueAPI.Effects.TranslocateEffect.Display(pos);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void CarnivalGoldEffect(Vector2 startPos, Vector2 endPos, int numCoins)
+        {
+            RogueAPI.Effects.CarnivalGoldEffect.Display(startPos, endPos, numCoins);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void NinjaDisappearEffect(GameObj obj)
+        {
+            RogueAPI.Effects.LogEffect.Display(obj);
+            RogueAPI.Effects.NinjaSmokeEffect.Display(obj);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void NinjaAppearEffect(GameObj obj)
+        {
+            RogueAPI.Effects.NinjaSmokeEffect.Display(obj);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void LoadingGateSmokeEffect(int numEntities)
+        {
+            RogueAPI.Effects.LoadingGateSmokeEffect.Display(numEntities);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void DestroyFireballBoss(Vector2 pos)
+        {
+            RogueAPI.Effects.DestroyFireballEffect.Display(pos);
+        }
+
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Remove)]
         public SpriteObj DisplayEffect(Vector2 position, string spriteName)
