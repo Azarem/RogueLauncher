@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -41,6 +42,16 @@ namespace AssemblyTranslator.Graphs
 
             _fileName = fileName;
 
+            if (debug)
+            {
+                var debugAttr = _customAttributes.FirstOrDefault(x => x.Constructor.DeclaringType == typeof(DebuggableAttribute));
+                if (debugAttr != null)
+                    _customAttributes.Remove(debugAttr);
+
+                _customAttributes.Add(debugAttr = new CustomAttributeGraph() { Constructor = typeof(DebuggableAttribute).GetConstructor(new Type[] { typeof(DebuggableAttribute.DebuggingModes) }) });
+                debugAttr.ConstructorArguments.Add(DebuggableAttribute.DebuggingModes.DisableOptimizations | DebuggableAttribute.DebuggingModes.Default | DebuggableAttribute.DebuggingModes.IgnoreSymbolStoreSequencePoints);
+            }
+
             CreateBuilders(translator, debug);
             DefineMembers(translator);
             DefineCode(translator);
@@ -58,7 +69,7 @@ namespace AssemblyTranslator.Graphs
             _builder = AssemblyBuilder.DefineDynamicAssembly(_assemblyName, AssemblyBuilderAccess.RunAndSave);
 
             foreach (var m in _modules)
-                m.DeclareTypes(translator);
+                m.DeclareTypes(translator, debug);
 
             translator.ProcessTypeRewriters();
 

@@ -121,12 +121,14 @@ namespace AssemblyTranslator
                     if (File.Exists(path))
                         File.Delete(path);
 
-                    path = _graph.AssemblyName.Name + ".pdb";
-                    if (File.Exists(path))
-                        File.Delete(path);
 
                     //Environment.CurrentDirectory = oldDir;
                 }
+
+                //Always delete PDB, it is not useful
+                path = _graph.AssemblyName.Name + ".pdb";
+                if (File.Exists(path))
+                    File.Delete(path);
             }
 
             return outBytes;

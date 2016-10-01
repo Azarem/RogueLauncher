@@ -274,47 +274,47 @@ namespace RogueLauncher.Rewrite
         public void UpdateEquipmentColours() { }
 
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "ChangeFieldCall")]
-        public static float get_ClassDamageGivenMultiplier(byte id) { return ClassDefinition.GetById(Game.PlayerStats.Class).PhysicalDamageMultiplier; }
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "ChangeFieldCall")]
+        //public static float get_ClassDamageGivenMultiplier(byte id) { return ClassDefinition.GetById(Game.PlayerStats.Class).PhysicalDamageMultiplier; }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "ChangeFieldCall")]
-        public static float get_ClassDamageTakenMultiplier(byte id) { return ClassDefinition.GetById(Game.PlayerStats.Class).DamageTakenMultiplier; }
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "ChangeFieldCall")]
+        //public static float get_ClassDamageTakenMultiplier(byte id) { return ClassDefinition.GetById(Game.PlayerStats.Class).DamageTakenMultiplier; }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "ChangeFieldCall")]
-        public static float get_ClassMagicDamageGivenMultiplier(byte id) { return ClassDefinition.GetById(Game.PlayerStats.Class).MagicDamageMultiplier; }
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "ChangeFieldCall")]
+        //public static float get_ClassMagicDamageGivenMultiplier(byte id) { return ClassDefinition.GetById(Game.PlayerStats.Class).MagicDamageMultiplier; }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "ChangeFieldCall")]
-        public static float get_ClassMoveSpeedMultiplier(byte id) { return ClassDefinition.GetById(Game.PlayerStats.Class).MoveSpeedMultiplier; }
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "ChangeFieldCall")]
+        //public static float get_ClassMoveSpeedMultiplier(byte id) { return ClassDefinition.GetById(Game.PlayerStats.Class).MoveSpeedMultiplier; }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "ChangeFieldCall")]
-        public static float get_ClassTotalHPMultiplier(byte id) { return ClassDefinition.GetById(Game.PlayerStats.Class).HealthMultiplier; }
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "ChangeFieldCall")]
+        //public static float get_ClassTotalHPMultiplier(byte id) { return ClassDefinition.GetById(Game.PlayerStats.Class).HealthMultiplier; }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "ChangeFieldCall")]
-        public static float get_ClassTotalMPMultiplier(byte id) { return ClassDefinition.GetById(Game.PlayerStats.Class).ManaMultiplier; }
+        //[Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap, contentHandler: "ChangeFieldCall")]
+        //public static float get_ClassTotalMPMultiplier(byte id) { return ClassDefinition.GetById(Game.PlayerStats.Class).ManaMultiplier; }
 
-        public static void ChangeFieldCall(MethodGraph sourceGraph, MethodGraph newGraph)
-        {
-            sourceGraph.Attributes = MethodAttributes.Public | MethodAttributes.Static;
-            sourceGraph.CallingConvention = CallingConventions.Standard;
+        //public static void ChangeFieldCall(MethodGraph sourceGraph, MethodGraph newGraph)
+        //{
+        //    sourceGraph.Attributes = MethodAttributes.Public | MethodAttributes.Static;
+        //    sourceGraph.CallingConvention = CallingConventions.Standard;
 
-            newGraph.Parameters[1].DeclaringObject = sourceGraph;
-            newGraph.CallingConvention = CallingConventions.Standard | CallingConventions.HasThis;
+        //    newGraph.Parameters[1].DeclaringObject = sourceGraph;
+        //    newGraph.CallingConvention = CallingConventions.Standard | CallingConventions.HasThis;
 
-            var instr = sourceGraph.InstructionList;
-            instr.Locals.Clear();
+        //    var instr = sourceGraph.InstructionList;
+        //    instr.Locals.Clear();
 
-            instr.RemoveAt(0);
-            instr.RemoveAt(0);
-            instr.RemoveAt(0);
+        //    instr.RemoveAt(0);
+        //    instr.RemoveAt(0);
+        //    instr.RemoveAt(0);
 
-            int ix = 0, count = instr.Count;
-            while (ix < count)
-            {
-                var i = instr[ix++];
-                if (i.ILCode == ILCode.Ldloc_0)
-                    i.Replace(new ParameterInstruction() { OpCode = OpCodes.Ldarg_0 });
-            }
-        }
+        //    int ix = 0, count = instr.Count;
+        //    while (ix < count)
+        //    {
+        //        var i = instr[ix++];
+        //        if (i.ILCode == ILCode.Ldloc_0)
+        //            i.Replace(new ParameterInstruction() { OpCode = OpCodes.Ldarg_0 });
+        //    }
+        //}
 
         [Rewrite]
         public PlayerObj(string spriteName, PlayerIndex playerIndex, PhysicsManager physicsManager, ProceduralLevelScreen levelToAttachTo, Game game)

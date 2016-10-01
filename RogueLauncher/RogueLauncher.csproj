@@ -149,6 +149,7 @@
     <Compile Include="Rewrite\ProceduralLevelScreen.cs" />
     <Compile Include="Rewrite\ProfileCardScreen.cs" />
     <Compile Include="Rewrite\Program.cs" />
+    <Compile Include="Rewrite\ProjectileIconObj.cs" />
     <Compile Include="Rewrite\ProjectileIconPool.cs" />
     <Compile Include="Rewrite\ProjectileManager.cs" />
     <None Include="Rewrite\ProjectileObj.cs" />
@@ -190,33 +191,36 @@
       <Project>{db1a6a91-a2fe-4776-9ed4-f0136aaec128}</Project>
       <Name>AssemblyTranslator</Name>
       <EmbedInteropTypes>False</EmbedInteropTypes>
-      <Private>True</Private>
+      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\RogueAPI\RogueAPI.csproj">
       <Project>{4fe7b32a-2a8f-4346-a739-0c4f91c85727}</Project>
       <Name>RogueAPI</Name>
-      <Private>True</Private>
+      <Private>False</Private>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="AssemblyTranslator.dll" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Extenders\" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="AssemblyTranslator.dll" />
+    <EmbeddedResource Include="AssemblyTranslator.pdb" Condition=" '$(Configuration)' == 'Debug' " />
     <Content Include="LauncherIcon.ico" />
+    <EmbeddedResource Include="RogueAPI.pdb" Condition=" '$(Configuration)' == 'Debug' " />
     <EmbeddedResource Include="RogueAPI.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"$(SolutionDir)ConfuserEx\Confuser.CLI.exe" -n -o="$(TargetDir)." "$(TargetPath)2"
-del "$(TargetDir)AssemblyTranslator2.dll"
-del "$(TargetDir)RogueAPI2.dll"</PostBuildEvent>
+    <PostBuildEvent>"$(SolutionDir)ConfuserEx\Confuser.CLI.exe" -n -o="$(TargetDir)." "$(TargetPath)"
+del "$(TargetDir)AssemblyTranslator.dll"
+del "$(TargetDir)AssemblyTranslator.pdb"
+del "$(TargetDir)RogueAPI.dll"
+del "$(TargetDir)RogueAPI.pdb"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>"$(SolutionDir)ConfuserEx\Confuser.CLI.exe" -n -o="$(ProjectDir)." "$(SolutionDir)AssemblyTranslator\bin\$(ConfigurationName)\AssemblyTranslator.dll"
-xcopy /Y "$(SolutionDir)RogueAPI\bin\$(ConfigurationName)\RogueAPI.dll" "$(ProjectDir)"</PreBuildEvent>
+xcopy /Y /C "$(SolutionDir)RogueAPI\bin\$(ConfigurationName)\RogueAPI.pdb" "$(ProjectDir)"
+xcopy /Y /C "$(SolutionDir)RogueAPI\bin\$(ConfigurationName)\RogueAPI.dll" "$(ProjectDir)"</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

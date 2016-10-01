@@ -329,6 +329,12 @@ namespace RogueLauncher.Rewrite
             RogueAPI.Effects.DestroyFireballEffect.Display(pos);
         }
 
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public void LastBossSpellCastEffect(GameObj obj, float angle, bool megaSpell)
+        {
+            RogueAPI.Effects.SpellCastEffect.Display(obj, angle, false, megaSpell);
+        }
+
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Remove)]
         public SpriteObj DisplayEffect(Vector2 position, string spriteName)

@@ -28,48 +28,41 @@ namespace RogueLauncher.Rewrite
             string firstPart = text.Substring(0, startIndex);
             string lastPart = endIndex + 1 < text.Length ? text.Substring(endIndex + 1) : "";
             string substring = text.Substring(startIndex + 1, endIndex - startIndex - 1);
-            InputKeys input = 0;
-            bool isButton = false;
+            Keys? key = null;
+            Buttons? button = null;
 
             if (substring.StartsWith("Input"))
             {
-                input = (InputKeys)byte.Parse(substring.Substring(6));
-                isButton = InputManager.IsGamepadConnected();
+                var input = (InputKeys)byte.Parse(substring.Substring(6));
+                if (InputManager.IsGamepadConnected())
+                    button = InputManager.GetMappedButton(input);
+                else
+                    key = InputManager.GetMappedKey(input);
             }
             else if (substring.StartsWith("Key"))
-            {
-                input = (InputKeys)byte.Parse(substring.Substring(4));
-            }
+                key = (Keys)Enum.Parse(typeof(Keys), substring.Substring(4));
             else if (substring.StartsWith("Button"))
-            {
-                input = (InputKeys)byte.Parse(substring.Substring(7));
-                isButton = true;
-            }
+                button = (Buttons)Enum.Parse(typeof(Buttons), substring.Substring(7));
             else
                 return firstPart + lastPart;
 
 
             KeyIconObj keyIconObj = new KeyIconObj();
 
-            if (isButton)
-            {
-                keyIconObj.SetButton(InputManager.GetMappedButton(input));
-            }
+            if (button != null)
+                keyIconObj.SetButton(button.Value);
             else
-            {
-                var key = InputManager.GetMappedKey(input);
                 keyIconObj.SetKey(key, key != Keys.Enter && key != Keys.Space);
-            }
+
+            var scale = m_internalFontSizeScale * Scale;
+            var height = Font.MeasureString("0").Y * scale.Y;
+            keyIconObj.Scale = new Vector2(height / keyIconObj.Height) * ForcedScale;
 
             var spacer = " ";
-            var spacerWidth = Font.MeasureString(spacer).X * m_internalFontSizeScale.X * Scale.X;
+            var spacerWidth = Font.MeasureString(spacer).X * scale.X;
             var spaceNum = (int)Math.Ceiling(keyIconObj.Width / spacerWidth);
 
-            var height = Font.MeasureString("0").Y * m_internalFontSizeScale.Y * Scale.Y;
-
-            var firstWidth = Font.MeasureString(firstPart).X * m_internalFontSizeScale.X * Scale.X;
-
-            keyIconObj.Scale = new Vector2(height / keyIconObj.Height) * ForcedScale;
+            var firstWidth = Font.MeasureString(firstPart).X * scale.X;
 
             m_yOffset = height / 2;
             m_iconList.Add(keyIconObj);

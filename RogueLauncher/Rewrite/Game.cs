@@ -332,6 +332,7 @@ namespace RogueLauncher.Rewrite
             RogueAPI.Game.InputManager.MapStick(InputKeys.PlayerUp2, RogueAPI.Game.ThumbStick.Left, -90f, 30f);
             RogueAPI.Game.InputManager.MapStick(InputKeys.PlayerDown2, RogueAPI.Game.ThumbStick.Left, 90f, 30f);
 
+            InitializeGlobalInput();
         }
 
 
