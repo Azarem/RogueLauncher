@@ -2,7 +2,6 @@
 using AssemblyTranslator.Graphs;
 using AssemblyTranslator.IL;
 using DS2DEngine;
-using InputSystem;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -584,7 +583,7 @@ namespace RogueLauncher.Rewrite
 
             CheckGroundCollision();
 
-            if (State != 3 && (!Game.GlobalInput.Pressed(10) && !Game.GlobalInput.Pressed(11) || m_currentLogicSet == m_airAttackLS && m_currentLogicSet.IsActive && !IsAirAttacking) && !m_isTouchingGround && AccelerationY < 0f)
+            if (State != 3 && (!InputManager.IsPressed(InputFlags.PlayerJump1 | InputFlags.PlayerJump2) || m_currentLogicSet == m_airAttackLS && m_currentLogicSet.IsActive && !IsAirAttacking) && !m_isTouchingGround && AccelerationY < 0f)
                 AccelerationY += JumpDeceleration * totalSeconds;
 
             if (Game.PlayerStats.Class == 16 && CurrentMana < MaxMana)
@@ -672,6 +671,9 @@ namespace RogueLauncher.Rewrite
             base.Update(gameTime);
         }
 
+        [Rewrite]
+        public override void HandleInput() { }
+
 
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
         private void InputControls()
@@ -693,7 +695,7 @@ namespace RogueLauncher.Rewrite
             //Blocking
             if (State != (int)RogueAPI.Game.PlayerState.Tanuki)
             {
-                if (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerBlock) && CanBlock && !m_currentLogicSet.IsActive)
+                if (InputManager.IsPressed(InputKeys.PlayerBlock) && CanBlock && !m_currentLogicSet.IsActive)
                 {
                     if (CurrentMana >= 25f)
                     {
@@ -709,10 +711,10 @@ namespace RogueLauncher.Rewrite
 
                         State = (int)RogueAPI.Game.PlayerState.Blocking;
 
-                        if (Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerBlock))
+                        if (InputManager.IsNewlyPressed(InputKeys.PlayerBlock))
                             SoundManager.PlaySound("Player_Block_Action");
                     }
-                    else if (Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerBlock))
+                    else if (InputManager.IsNewlyPressed(InputKeys.PlayerBlock))
                         SoundManager.PlaySound("Error_Spell");
 
                 }
@@ -728,19 +730,19 @@ namespace RogueLauncher.Rewrite
 
             if (State != (int)RogueAPI.Game.PlayerState.Blocking && State != (int)RogueAPI.Game.PlayerState.Tanuki)
             {
-                if (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerLeft1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerLeft2) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerRight1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerRight2))
+                if (InputManager.IsPressed(InputFlags.PlayerLeft1 | InputFlags.PlayerLeft2 | InputFlags.PlayerRight1 | InputFlags.PlayerRight2))
                 {
                     if (m_isTouchingGround)
                         State = (int)RogueAPI.Game.PlayerState.Walking;
 
-                    if ((Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerRight1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerRight2)) && (!m_collidingRight || m_isTouchingGround))
+                    if (InputManager.IsPressed(InputFlags.PlayerRight1 | InputFlags.PlayerRight2) && (!m_collidingRight || m_isTouchingGround))
                     {
-                        base.HeadingX = 1f;
+                        HeadingX = 1f;
                         CurrentSpeed = TotalMovementSpeed;
                     }
-                    else if ((Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerLeft1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerLeft2)) && !Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerRight1) && !Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerRight2) && (!m_collidingLeft || m_isTouchingGround))
+                    else if (InputManager.IsPressed(InputFlags.PlayerLeft1 | InputFlags.PlayerLeft2) && !InputManager.IsPressed(InputFlags.PlayerRight1 | InputFlags.PlayerRight2) && (!m_collidingLeft || m_isTouchingGround))
                     {
-                        base.HeadingX = -1f;
+                        HeadingX = -1f;
                         CurrentSpeed = TotalMovementSpeed;
                     }
                     else
@@ -753,9 +755,9 @@ namespace RogueLauncher.Rewrite
                     //}
                     if (!m_currentLogicSet.IsActive || m_currentLogicSet.IsActive && (Game.PlayerStats.Traits.X == 27f || Game.PlayerStats.Traits.Y == 27f))
                     {
-                        if (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerRight1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerRight2))
+                        if (InputManager.IsPressed(InputFlags.PlayerRight1 | InputFlags.PlayerRight2))
                             Flip = SpriteEffects.None;
-                        else if (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerLeft1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerLeft2))
+                        else if (InputManager.IsPressed(InputKeys.PlayerLeft1 | InputKeys.PlayerLeft2))
                             Flip = SpriteEffects.FlipHorizontally;
                     }
                     if (m_isTouchingGround && m_currentLogicSet == m_standingAttack3LogicSet && m_currentLogicSet.IsActive && m_playerLegs.SpriteName != "PlayerWalkingLegs_Sprite")
@@ -781,7 +783,7 @@ namespace RogueLauncher.Rewrite
             bool startedJump = false;
             if (State != (int)RogueAPI.Game.PlayerState.Blocking && State != (int)RogueAPI.Game.PlayerState.Flying && State != (int)RogueAPI.Game.PlayerState.Tanuki && Game.PlayerStats.Class != 16)
             {
-                if ((Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerJump1) || Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerJump2)) && m_isTouchingGround && m_dropThroughGroundTimer <= 0f)
+                if (InputManager.IsNewlyPressed(InputFlags.PlayerJump1 | InputFlags.PlayerJump2) && m_isTouchingGround && m_dropThroughGroundTimer <= 0f)
                 {
                     State = (int)RogueAPI.Game.PlayerState.Jumping;
                     AccelerationY = -base.JumpHeight;
@@ -808,7 +810,7 @@ namespace RogueLauncher.Rewrite
                     }
                     startedJump = true;
                 }
-                else if ((Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerJump1) || Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerJump2)) && !m_isTouchingGround && m_doubleJumpCount < TotalDoubleJumps && m_dropThroughGroundTimer <= 0f)
+                else if (InputManager.IsNewlyPressed(InputFlags.PlayerJump1 | InputFlags.PlayerJump2) && !m_isTouchingGround && m_doubleJumpCount < TotalDoubleJumps && m_dropThroughGroundTimer <= 0f)
                 {
                     State = (int)RogueAPI.Game.PlayerState.Jumping;
                     AccelerationY = -base.DoubleJumpHeight;
@@ -840,7 +842,7 @@ namespace RogueLauncher.Rewrite
             }
             if (!m_currentLogicSet.IsActive && State != (int)RogueAPI.Game.PlayerState.Blocking && State != (int)RogueAPI.Game.PlayerState.Tanuki && Game.PlayerStats.Class != 16)
             {
-                if ((Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerDown1) || Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerDown2)) && CanAirAttackDownward && Game.GameConfig.QuickDrop && State == (int)RogueAPI.Game.PlayerState.Jumping && m_dropThroughGroundTimer <= 0f)
+                if (InputManager.IsNewlyPressed(InputFlags.PlayerDown1 | InputFlags.PlayerDown2) && CanAirAttackDownward && Game.GameConfig.QuickDrop && State == (int)RogueAPI.Game.PlayerState.Jumping && m_dropThroughGroundTimer <= 0f)
                 {
                     m_currentLogicSet = m_airAttackLS;
                     if (Game.PlayerStats.Class == 6 || Game.PlayerStats.Class == 14)
@@ -851,7 +853,7 @@ namespace RogueLauncher.Rewrite
 
                     m_currentLogicSet.Execute();
                 }
-                else if (Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerAttack))
+                else if (InputManager.IsNewlyPressed(InputFlags.PlayerAttack))
                 {
                     if (State != (int)RogueAPI.Game.PlayerState.Jumping)
                     {
@@ -886,7 +888,7 @@ namespace RogueLauncher.Rewrite
                     }
                     else
                     {
-                        if ((Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerDown1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerDown2)) && CanAirAttackDownward)
+                        if (InputManager.IsPressed(InputFlags.PlayerDown1 | InputFlags.PlayerDown2) && CanAirAttackDownward)
                             m_currentLogicSet = m_airAttackLS;
                         else
                             m_currentLogicSet = m_standingAttack3LogicSet;
@@ -995,7 +997,7 @@ namespace RogueLauncher.Rewrite
                 //    }
                 //}
 
-                if (Game.PlayerStats.Class == 16 && (Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerJump1) || Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerJump2)))
+                if (Game.PlayerStats.Class == 16 && InputManager.IsNewlyPressed(InputFlags.PlayerJump1 | InputFlags.PlayerJump2))
                 {
                     if (State == (int)RogueAPI.Game.PlayerState.Dragon)
                     {
@@ -1014,7 +1016,7 @@ namespace RogueLauncher.Rewrite
             }
 
             //Air Dash
-            if ((Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerDashLeft) || Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerDashRight)) && CanAirDash &&
+            if (InputManager.IsNewlyPressed(InputFlags.PlayerDashLeft | InputFlags.PlayerDashRight) && CanAirDash &&
                 m_dashCooldownCounter <= 0 && (m_isTouchingGround || !m_isTouchingGround && m_airDashCount < TotalAirDashes) &&
                 State != (int)RogueAPI.Game.PlayerState.Blocking && State != (int)RogueAPI.Game.PlayerState.Tanuki)
             {
@@ -1026,7 +1028,7 @@ namespace RogueLauncher.Rewrite
                 m_dashCounter = (int)(DashTime * 1000f);
                 LockControls();
                 CurrentSpeed = DashSpeed;
-                base.HeadingX = Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerDashLeft) ? -1f : 1f;
+                base.HeadingX = InputManager.IsNewlyPressed(InputFlags.PlayerDashLeft) ? -1f : 1f;
                 AccelerationY = 0f;
                 if (m_currentLogicSet.IsActive)
                     m_currentLogicSet.Stop();
@@ -1043,9 +1045,9 @@ namespace RogueLauncher.Rewrite
             //Flying
             if (State == (int)RogueAPI.Game.PlayerState.Flying || State == (int)RogueAPI.Game.PlayerState.Dragon)
             {
-                if (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerUp1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerUp2) || InputSystem.InputManager.Pressed(Buttons.LeftThumbstickUp, PlayerIndex.One))
+                if (InputManager.IsPressed(InputFlags.PlayerUp1 | InputFlags.PlayerUp2) || InputSystem.InputManager.Pressed(Buttons.LeftThumbstickUp, PlayerIndex.One))
                     AccelerationY = -TotalMovementSpeed;
-                else if (Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerDown1) || Game.GlobalInput.Pressed((int)RogueAPI.Game.InputKeys.PlayerDown2) || InputSystem.InputManager.Pressed(Buttons.LeftThumbstickDown, PlayerIndex.One))
+                else if (InputManager.IsPressed(InputFlags.PlayerDown1 | InputFlags.PlayerDown2) || InputSystem.InputManager.Pressed(Buttons.LeftThumbstickDown, PlayerIndex.One))
                     AccelerationY = TotalMovementSpeed;
                 else
                     AccelerationY = 0f;
@@ -1058,7 +1060,7 @@ namespace RogueLauncher.Rewrite
                         m_playerLegs.ChangeSprite("PlayerAttackJumpingLegs_Sprite");
                 }
 
-                if ((Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerJump1) || Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerJump2)) && State != (int)RogueAPI.Game.PlayerState.Dragon)
+                if (InputManager.IsNewlyPressed(InputFlags.PlayerJump1 | InputFlags.PlayerJump2) && State != (int)RogueAPI.Game.PlayerState.Dragon)
                 {
                     State = (int)RogueAPI.Game.PlayerState.Jumping;
                     base.DisableGravity = false;
@@ -1066,7 +1068,7 @@ namespace RogueLauncher.Rewrite
                     //return;
                 }
             }
-            else if ((Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerJump1) || Game.GlobalInput.JustPressed((int)RogueAPI.Game.InputKeys.PlayerJump2)) && !m_isTouchingGround && !startedJump && m_doubleJumpCount >= TotalDoubleJumps && m_dropThroughGroundTimer <= 0f && CanFly && m_flightCounter > 0f &&
+            else if (InputManager.IsNewlyPressed(InputFlags.PlayerJump1 | InputFlags.PlayerJump2) && !m_isTouchingGround && !startedJump && m_doubleJumpCount >= TotalDoubleJumps && m_dropThroughGroundTimer <= 0f && CanFly && m_flightCounter > 0f &&
                 State != (int)RogueAPI.Game.PlayerState.Blocking && State != (int)RogueAPI.Game.PlayerState.Flying && State != (int)RogueAPI.Game.PlayerState.Tanuki && State != (int)RogueAPI.Game.PlayerState.Dragon)
             {
                 AccelerationY = 0f;

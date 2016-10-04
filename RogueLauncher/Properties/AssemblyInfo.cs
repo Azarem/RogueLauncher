@@ -39,5 +39,6 @@ using System.Runtime.InteropServices;
 [assembly: Obfuscation(Exclude = false, Feature = "generate debug symbol: true")]
 [assembly: Obfuscation(Exclude = false, Feature = "preset(minimum);-anti debug;-rename")]
 #else
-[assembly: Obfuscation(Exclude = false, Feature = "preset(maximum);-ref proxy;")]
+//[assembly: Obfuscation(Exclude = false, Feature = "packer:compressor")]
+[assembly: Obfuscation(Exclude = false, Feature = "preset(aggressive);-rename;-ref proxy;-constants;")]
 #endif

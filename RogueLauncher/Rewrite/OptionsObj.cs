@@ -4,6 +4,7 @@ using RogueAPI.Game;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -49,6 +50,9 @@ namespace RogueLauncher.Rewrite
             //}
         }
 
+        [Rewrite]
+        public bool IsSelected { get; set; }
+
         //public bool IsSelected
         //{
         //    get
@@ -90,7 +94,7 @@ namespace RogueLauncher.Rewrite
         //    }
         //}
 
-        [Rewrite]
+        [Rewrite(action: RewriteAction.Replace)]
         public virtual void HandleInput()
         {
             if (InputManager.IsNewlyPressed(InputFlags.MenuCancel1 | InputFlags.MenuCancel2))

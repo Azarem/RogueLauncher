@@ -786,5 +786,65 @@ namespace RogueLauncher.Rewrite
 
             base.Draw(gameTime);
         }
+
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public override void HandleInput()
+        {
+            if (RogueAPI.Game.InputManager.IsNewlyPressed(InputFlags.MenuPause) && CurrentRoom.Name != "Ending")
+                (ScreenManager as RCScreenManager).DisplayScreen(16, true, null);
+
+            bool blockInput = false;
+
+            //if (!LevelEV.RUN_DEMO_VERSION && !LevelEV.CREATE_RETAIL_VERSION)
+            //{
+            //    if (InputManager.JustPressed(Keys.RightControl, null))
+            //    {
+            //        if (SoundManager.GetCurrentMusicName() == "CastleSong")
+            //            SoundManager.PlayMusic("TowerSong", true, 0.5f);
+            //        else if (SoundManager.GetCurrentMusicName() != "TowerSong")
+            //            SoundManager.PlayMusic("CastleSong", true, 0.5f);
+            //        else
+            //            SoundManager.PlayMusic("DungeonBoss", true, 0.5f);
+            //    }
+
+            //    if (m_inputMap.JustPressed(INPUT_TOGGLEMAP))
+            //        m_miniMapDisplay.AddAllRooms(m_roomList);
+
+            //    if (m_inputMap.JustPressed(INPUT_DISPLAYROOMINFO))
+            //        LevelEV.SHOW_DEBUG_TEXT = !LevelEV.SHOW_DEBUG_TEXT;
+
+            //    if (m_inputMap.JustPressed(INPUT_TOGGLEZOOM))
+            //    {
+            //        if (Camera.Zoom >= 1f)
+            //            Camera.Zoom = 0.05f;
+            //        else
+            //            Camera.Zoom = 1f;
+            //    }
+
+
+            //    if (m_inputMap.Pressed(INPUT_LEFTCONTROL))
+            //    {
+            //        blockInput = true;
+            //        float step = 2000f;
+
+            //        if (m_inputMap.Pressed(INPUT_LEFT))
+            //            Camera.X -= step * (float)Camera.GameTime.ElapsedGameTime.TotalSeconds;
+            //        else if (m_inputMap.Pressed(INPUT_RIGHT))
+            //            Camera.X += step * (float)Camera.GameTime.ElapsedGameTime.TotalSeconds;
+
+            //        if (m_inputMap.Pressed(INPUT_UP))
+            //            Camera.Y -= step * (float)Camera.GameTime.ElapsedGameTime.TotalSeconds;
+            //        else if (m_inputMap.Pressed(INPUT_DOWN))
+            //            Camera.Y += step * (float)Camera.GameTime.ElapsedGameTime.TotalSeconds;
+            //    }
+
+            //}
+
+            if (m_player != null && !blockInput && !m_player.IsKilled)
+                m_player.HandleInput();
+
+            base.HandleInput();
+        }
     }
 }

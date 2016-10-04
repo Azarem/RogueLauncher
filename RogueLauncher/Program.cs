@@ -10,23 +10,39 @@ using System.Windows.Forms;
 
 namespace RogueLauncher
 {
-    public class Program : MarshalByRefObject
+    public class Program
     {
+        private static bool _buildOnly;
+        private static readonly string _assemblyFileName;
+        private static readonly string _newAssemblyName;
+        private delegate void EntryPointDelegate(string[] args);
         //internal static int SteamAppId;
 
         static Program()
         {
+            _assemblyFileName = "RogueLegacy";
+            _newAssemblyName = "RogueLegacyTest";
+            _buildOnly = false;
+
             AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
             AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += ResolveReflectionAssembly;
+            //LoadEmbeddedAssembly("AssemblyTranslator", false);
+            //LoadEmbeddedAssembly("RogueAPI", false);
         }
 
-        private static readonly string assemblyFileName = "RogueLegacy";
-        private static readonly string newAssemblyName = "RogueLegacyTest";
-        private delegate void EntryPointDelegate(string[] args);
 
         static void Main(string[] args)
         {
-            bool started = EnsureSteamStarted();
+            _buildOnly = args != null && args.Contains("-buildonly", StringComparer.OrdinalIgnoreCase);
+            bool started = false;
+
+#if !DEBUG
+            if (_buildOnly)
+                return;
+#endif
+
+            if (!_buildOnly)
+                started = EnsureSteamStarted();
 
             AppDomain generateDomain = null;
             byte[] asmBytes;
@@ -40,7 +56,10 @@ namespace RogueLauncher
                     LoaderOptimization = LoaderOptimization.MultiDomainHost
                 });
 
-                generateDomain.DoCallBack(new CrossAppDomainDelegate(CreateAssemblyRemote));
+#if DEBUG
+                generateDomain.SetData("BUILDONLY", _buildOnly);
+#endif
+                generateDomain.DoCallBack(CreateAssemblyRemote);
                 asmBytes = (byte[])generateDomain.GetData("ASMDATA");
             }
             finally
@@ -49,7 +68,8 @@ namespace RogueLauncher
                     AppDomain.Unload(generateDomain);
             }
 
-            //var asmBytes = CreateAssembly();
+            if (_buildOnly)
+                return;
 
             if (!started && !WaitForSteamStart())
                 MessageBox.Show("Unable to start the Steam client!");
@@ -57,7 +77,7 @@ namespace RogueLauncher
             {
                 byte[] pdbBytes = null;
 #if DEBUG
-                var pdbFile = newAssemblyName + ".pdb";
+                var pdbFile = _newAssemblyName + ".pdb";
                 if (!File.Exists(pdbFile))
                     pdbFile = FindPdbFile(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Temp", "JustDecompile", "Symbols"), pdbFile);
 
@@ -116,21 +136,35 @@ namespace RogueLauncher
         //Used as a remote endpoint for creating the assembly in a workspace app domain
         public static void CreateAssemblyRemote()
         {
-            var asmBytes = CreateAssembly();
-            AppDomain.CurrentDomain.SetData("ASMDATA", asmBytes);
+            try
+            {
+#if DEBUG
+                _buildOnly = (bool)AppDomain.CurrentDomain.GetData("BUILDONLY");
+#endif
+                var asmBytes = CreateAssembly();
+                AppDomain.CurrentDomain.SetData("ASMDATA", asmBytes);
+            }
+            catch (Exception x)
+            {
+                using (var str = new StreamWriter("ErrorLog.txt"))
+                    str.Write(x.ToString());
+                throw x;
+            }
         }
 
         public static byte[] CreateAssembly()
         {
+            var timestamp = DateTime.Now;
+
 #if DEBUG
             bool debug = true;
 #else
             bool debug = false;
 #endif
 
-            var asmFile = assemblyFileName + (debug && File.Exists(assemblyFileName + "_Debug.exe") ? "_Debug" : "") + ".exe";
+            var asmFile = _assemblyFileName + (debug && File.Exists(_assemblyFileName + "_Debug.exe") ? "_Debug" : "") + ".exe";
 
-            GraphManager manager = new GraphManager(assemblyFileName + ".exe");
+            GraphManager manager = new GraphManager(_assemblyFileName + ".exe");
 
             //Pull out Steam app ID
             var appId = (from x in manager.Graph.Modules
@@ -149,8 +183,12 @@ namespace RogueLauncher
             manager.ReplaceType("RogueCastle.ProjectileObj", typeof(RogueAPI.Projectiles.ProjectileObj));
             manager.ReplaceType("RogueCastle.EquipmentData", typeof(RogueAPI.Equipment.EquipmentBase));
 
-            manager.CreateAssembly(newAssemblyName, debug);
-            return manager.SaveAndGetBytes(PortableExecutableKinds.ILOnly | PortableExecutableKinds.Required32Bit, ImageFileMachine.I386, !debug);
+            manager.CreateAssembly(_newAssemblyName, debug);
+            var asmBytes = manager.SaveAndGetBytes(PortableExecutableKinds.ILOnly | PortableExecutableKinds.Required32Bit, ImageFileMachine.I386, !debug);
+
+            Console.WriteLine("** ASSEMBLY CREATION COMPLETED IN " + DateTime.Now.Subtract(timestamp).TotalSeconds + "s **");
+
+            return asmBytes;
         }
 
         private static Assembly ResolveReflectionAssembly(object sender, ResolveEventArgs e)
@@ -168,51 +206,56 @@ namespace RogueLauncher
             return ResolveAssemblyInternal(sender, e, false);
         }
 
+        private static Assembly LoadEmbeddedAssembly(string asmName, bool reflectionOnly)
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            var thisName = assembly.GetName().Name;
+            var name = String.Format("{0}.{1}.dll", thisName, asmName);
+            byte[] asmBytes;
+            using (Stream stream = assembly.GetManifestResourceStream(name))
+            {
+                asmBytes = new byte[stream.Length];
+                stream.Read(asmBytes, 0, asmBytes.Length);
+            }
+
+            byte[] pdbBytes = null;
+#if DEBUG
+            if (!reflectionOnly)
+            {
+                name = String.Format("{0}.{1}.pdb", thisName, asmName);
+                using (Stream stream = assembly.GetManifestResourceStream(name))
+                {
+                    pdbBytes = new byte[stream.Length];
+                    stream.Read(pdbBytes, 0, pdbBytes.Length);
+                }
+            }
+
+            if (_buildOnly && asmName == "RogueAPI")
+            {
+                if (pdbBytes != null)
+                {
+                    name = asmName + ".pdb";
+                    using (var outStream = File.Open(name, FileMode.Create, FileAccess.Write))
+                        outStream.Write(pdbBytes, 0, pdbBytes.Length);
+                }
+
+                name = asmName + ".dll";
+                using (var outStream = File.Open(name, FileMode.Create, FileAccess.Write))
+                    outStream.Write(asmBytes, 0, asmBytes.Length);
+
+                return reflectionOnly ? Assembly.ReflectionOnlyLoadFrom(name) : Assembly.LoadFrom(name);
+            }
+#endif
+
+            return reflectionOnly ? Assembly.ReflectionOnlyLoad(asmBytes) : Assembly.Load(asmBytes, pdbBytes);
+        }
+
         private static Assembly ResolveAssemblyInternal(object sender, ResolveEventArgs e, bool reflectionOnly)
         {
             var n = new AssemblyName(e.Name);
 
             if (n.Name == "AssemblyTranslator" || n.Name == "RogueAPI")
-            {
-                Assembly assembly = Assembly.GetExecutingAssembly();
-                var asmName = assembly.GetName().Name;
-                var name = String.Format("{0}.{1}.dll", asmName, n.Name);
-                byte[] asmBytes;
-                using (Stream stream = assembly.GetManifestResourceStream(name))
-                {
-                    asmBytes = new byte[stream.Length];
-                    stream.Read(asmBytes, 0, asmBytes.Length);
-                }
-
-                //if (n.Name == "RogueAPI")
-                //{
-                //    name = n.Name + ".dll";
-                //    using (var outStream = File.Open(name, FileMode.Create, FileAccess.Write))
-                //        outStream.Write(asmBytes, 0, asmBytes.Length);
-
-                //    return reflectionOnly ? Assembly.ReflectionOnlyLoadFrom(name) : Assembly.LoadFrom(name);
-                //}
-
-                byte[] pdbBytes = null;
-#if DEBUG
-                if (!reflectionOnly)
-                {
-                    name = String.Format("{0}.{1}.pdb", asmName, n.Name);
-                    using (Stream stream = assembly.GetManifestResourceStream(name))
-                    {
-                        pdbBytes = new byte[stream.Length];
-                        stream.Read(pdbBytes, 0, pdbBytes.Length);
-                    }
-                    //if (File.Exists(name))
-                    //    using (Stream stream = File.OpenRead(name))
-                    //    {
-                    //        pdbBytes = new byte[stream.Length];
-                    //        stream.Read(pdbBytes, 0, pdbBytes.Length);
-                    //    }
-                }
-#endif
-                return reflectionOnly ? Assembly.ReflectionOnlyLoad(asmBytes) : Assembly.Load(asmBytes, pdbBytes);
-            }
+                return LoadEmbeddedAssembly(n.Name, reflectionOnly);
 
             var path = Path.Combine(Environment.CurrentDirectory, n.Name);
             if (!File.Exists(path))

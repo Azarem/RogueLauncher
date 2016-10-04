@@ -1,8 +1,9 @@
 ﻿using AssemblyTranslator;
 using DS2DEngine;
-using InputSystem;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using RogueAPI.Game;
+using System;
 using System.Reflection;
 
 namespace RogueLauncher.Rewrite
@@ -51,10 +52,10 @@ namespace RogueLauncher.Rewrite
             //else
             //    m_mapDisplay.DrawNothing = true;
 
-            m_continueText.Text = string.Concat("[Input:", (byte)9, "]  to close map");
-            m_recentreText.Text = string.Concat("[Input:", (byte)0, "]  to center on player");
+            m_continueText.Text = "[Input:" + (int)InputKeys.MenuMap + "]  to close map";
+            m_recentreText.Text = "[Input:" + (int)InputKeys.MenuConfirm1 + "]  to center on player";
 
-            if (InputManager.GamePadIsConnected(PlayerIndex.One))
+            if (InputManager.IsGamepadConnected())
                 m_navigationText.Text = "[Button:LeftStick] to move map";
             else
                 m_navigationText.Text = "Use arrow keys to move map";
@@ -105,6 +106,61 @@ namespace RogueLauncher.Rewrite
             m_legend.Draw(Camera);
             Camera.End();
             base.Draw(gameTime);
+        }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public override void HandleInput()
+        {
+            if (InputManager.IsNewlyPressed(InputFlags.MenuMap | InputFlags.MenuCancel1 | InputFlags.MenuCancel2))
+            {
+                Game.ScreenManager.Player.UnlockControls();
+                (ScreenManager as RCScreenManager).HideCurrentScreen();
+            }
+
+            if (IsTeleporter)
+            {
+                int lastSelected = m_selectedTeleporter;
+
+                if (InputManager.IsNewlyPressed(InputFlags.PlayerRight1 | InputFlags.PlayerRight2))
+                {
+                    m_selectedTeleporter++;
+                    if (m_selectedTeleporter >= m_teleporterList.Length)
+                        m_selectedTeleporter = 0;
+                }
+                else if (InputManager.IsNewlyPressed(InputFlags.PlayerLeft1 | InputFlags.PlayerLeft2))
+                {
+                    m_selectedTeleporter--;
+                    if (m_selectedTeleporter < 0)
+                        m_selectedTeleporter = Math.Max(m_teleporterList.Length - 1, 0);
+                }
+
+                if (lastSelected != m_selectedTeleporter)
+                    m_mapDisplay.CentreAroundTeleporter(m_selectedTeleporter, true);
+
+                if (InputManager.IsNewlyPressed(InputFlags.MenuConfirm1 | InputFlags.MenuConfirm2))
+                {
+                    m_mapDisplay.TeleportPlayer(m_selectedTeleporter);
+                    (ScreenManager as RCScreenManager).HideCurrentScreen();
+                }
+            }
+            else
+            {
+                float panStep = 5f;
+
+                if (InputManager.IsPressed(InputFlags.PlayerUp1 | InputFlags.PlayerUp2))
+                    m_mapDisplay.CameraOffset.Y += panStep;
+                else if (InputManager.IsPressed(InputFlags.PlayerDown1 | InputFlags.PlayerDown2))
+                    m_mapDisplay.CameraOffset.Y -= panStep;
+
+                if (InputManager.IsPressed(InputFlags.PlayerLeft1 | InputFlags.PlayerLeft2))
+                    m_mapDisplay.CameraOffset.X += panStep;
+                else if (InputManager.IsPressed(InputFlags.PlayerRight1 | InputFlags.PlayerRight2))
+                    m_mapDisplay.CameraOffset.X -= panStep;
+
+                if (InputManager.IsNewlyPressed(InputFlags.MenuConfirm1 | InputFlags.MenuConfirm2))
+                    m_mapDisplay.CentreAroundPlayer();
+            }
+            base.HandleInput();
         }
     }
 }

@@ -1,10 +1,14 @@
 ﻿using AssemblyTranslator;
 using DS2DEngine;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using RogueAPI.Equipment;
+using RogueAPI.Game;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Tweener;
+using Tweener.Ease;
 
 namespace RogueLauncher.Rewrite
 {
@@ -33,6 +37,16 @@ namespace RogueLauncher.Rewrite
         private bool m_inCategoryMenu;
         [Rewrite]
         private ObjContainer[] m_activeIconArray;
+        [Rewrite]
+        private Cue m_rainSound;
+        [Rewrite]
+        private bool m_lockControls;
+        [Rewrite]
+        private KeyIconTextObj m_confirmText;
+        [Rewrite]
+        private KeyIconTextObj m_cancelText;
+        [Rewrite]
+        private KeyIconTextObj m_navigationText;
         [Rewrite]
         public PlayerObj Player { get; set; }
         [Rewrite]
@@ -158,57 +172,56 @@ namespace RogueLauncher.Rewrite
             }
         }
 
-        [Obfuscation(Exclude = true)]
-        [Rewrite(action: RewriteAction.Replace)]
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
         private void EquipmentSelectionInput()
         {
-            var categoryIndex = this.m_currentCategoryIndex - 6;
-            int equipmentIndex = this.m_currentEquipmentIndex;
+            var categoryIndex = m_currentCategoryIndex - 6;
+            int oldIndex = m_currentEquipmentIndex;
 
-            if (Game.GlobalInput.JustPressed(16) || Game.GlobalInput.JustPressed(17))
-                equipmentIndex = (equipmentIndex + 10) % 15;
+            if (InputManager.IsNewlyPressed(InputFlags.PlayerUp1 | InputFlags.PlayerUp2))
+                oldIndex = (oldIndex + 10) % 15;
+            else if (InputManager.IsNewlyPressed(InputFlags.PlayerDown1 | InputFlags.PlayerDown2))
+                oldIndex = (oldIndex + 5) % 15;
+            
+            if (InputManager.IsNewlyPressed(InputFlags.PlayerLeft1 | InputFlags.PlayerLeft2))
+                oldIndex += oldIndex % 5 == 0 ? 4 : -1;
 
-            if (Game.GlobalInput.JustPressed(18) || Game.GlobalInput.JustPressed(19))
-                equipmentIndex = (equipmentIndex + 5) % 15;
-
-            if (Game.GlobalInput.JustPressed(20) || Game.GlobalInput.JustPressed(21))
-                equipmentIndex += equipmentIndex % 5 == 0 ? 4 : -1;
-
-            if (Game.GlobalInput.JustPressed(22) || Game.GlobalInput.JustPressed(23))
-                equipmentIndex += equipmentIndex % 5 == 4 ? -4 : 1;
+            if (InputManager.IsNewlyPressed(InputFlags.PlayerRight1 | InputFlags.PlayerRight2))
+                oldIndex += oldIndex % 5 == 4 ? -4 : 1;
 
             var bpArr = Game.PlayerStats.GetBlueprintArray[categoryIndex];
 
-            if (equipmentIndex != this.m_currentEquipmentIndex)
+            if (oldIndex != m_currentEquipmentIndex)
             {
-                this.m_currentEquipmentIndex = equipmentIndex;
+                m_currentEquipmentIndex = oldIndex;
 
-                if (bpArr[equipmentIndex] == 1)
-                    bpArr[equipmentIndex] = 2;
+                if (bpArr[oldIndex] == 1)
+                    bpArr[oldIndex] = 2;
 
-                this.UpdateNewIcons();
-                this.UpdateIconSelectionText();
-                this.m_selectionIcon.Position = this.m_activeIconArray[equipmentIndex].AbsPosition;
+                UpdateNewIcons();
+                UpdateIconSelectionText();
+                m_selectionIcon.Position = m_activeIconArray[oldIndex].AbsPosition;
                 SoundManager.PlaySound("ShopBSMenuMove");
             }
 
-            if (Game.GlobalInput.JustPressed(2) || Game.GlobalInput.JustPressed(3))
+            if (InputManager.IsNewlyPressed(InputFlags.MenuCancel1 | InputFlags.MenuCancel2))
             {
                 SoundManager.PlaySound("ShopMenuCancel");
-                this.m_inCategoryMenu = true;
-                this.m_selectionIcon.Position = this.m_blacksmithUI.GetChildAt(this.m_currentCategoryIndex).AbsPosition;
-                this.UpdateIconSelectionText();
+                m_inCategoryMenu = true;
+                m_selectionIcon.Position = m_blacksmithUI.GetChildAt(m_currentCategoryIndex).AbsPosition;
+                UpdateIconSelectionText();
             }
-            if (Game.GlobalInput.JustPressed(0) || Game.GlobalInput.JustPressed(1))
+
+            if (InputManager.IsNewlyPressed(InputFlags.MenuConfirm1 | InputFlags.MenuConfirm2))
             {
                 var player = this.Player;
-                int item = bpArr[equipmentIndex];
+                int item = bpArr[oldIndex];
                 var equipArray = Game.PlayerStats.GetEquippedArray;
                 var currentEquipped = equipArray[categoryIndex];
 
                 if (item < 3 && item > 0)
                 {
-                    EquipmentBase equipmentData = Game.EquipmentSystem.GetEquipmentData(categoryIndex, equipmentIndex);
+                    EquipmentBase equipmentData = Game.EquipmentSystem.GetEquipmentData(categoryIndex, oldIndex);
                     if (Game.PlayerStats.Gold < equipmentData.Cost)
                     {
                         SoundManager.PlaySound("ShopMenuUnlockFail");
@@ -217,10 +230,10 @@ namespace RogueLauncher.Rewrite
                     {
                         SoundManager.PlaySound("ShopMenuUnlock");
                         Game.PlayerStats.Gold -= equipmentData.Cost;
-                        bpArr[equipmentIndex] = 3;
-                        ObjContainer firstColour = this.m_masterIconArray[categoryIndex][equipmentIndex];
+                        bpArr[oldIndex] = 3;
+                        ObjContainer firstColour = this.m_masterIconArray[categoryIndex][oldIndex];
 
-                        firstColour.ChangeSprite("BlacksmithUI_" + EquipmentCategoryType.ToString(categoryIndex) + (equipmentIndex % 5 + 1) + "Icon_Character");
+                        firstColour.ChangeSprite("BlacksmithUI_" + EquipmentCategoryType.ToString(categoryIndex) + (oldIndex % 5 + 1) + "Icon_Character");
 
                         for (int i = 1; i < firstColour.NumChildren; i++)
                             firstColour.GetChildAt(i).Opacity = 1f;
@@ -235,9 +248,9 @@ namespace RogueLauncher.Rewrite
                         this.UpdateIconSelectionText();
                     }
                 }
-                if (currentEquipped != equipmentIndex && item == 3)
+                if (currentEquipped != oldIndex && item == 3)
                 {
-                    EquipmentBase equipmentDatum = Game.EquipmentSystem.GetEquipmentData(categoryIndex, equipmentIndex);
+                    EquipmentBase equipmentDatum = Game.EquipmentSystem.GetEquipmentData(categoryIndex, oldIndex);
                     //int getEquippedArray1 = Game.PlayerStats.GetEquippedArray[categoryIndex];
                     int weight = 0;
                     if (currentEquipped != -1)
@@ -249,12 +262,12 @@ namespace RogueLauncher.Rewrite
                         return;
                     }
                     SoundManager.PlaySound("ShopBSEquip");
-                    equipArray[categoryIndex] = (sbyte)equipmentIndex;
+                    equipArray[categoryIndex] = (sbyte)oldIndex;
                     this.UpdateIconSelectionText();
                     Vector3 partIndices = PlayerPart.GetPartIndices(categoryIndex);
 
                     if (partIndices.X != -1f)
-                       player.GetChildAt((int)partIndices.X).TextureColor = equipmentDatum.FirstColour;
+                        player.GetChildAt((int)partIndices.X).TextureColor = equipmentDatum.FirstColour;
 
                     if (partIndices.Y != -1f)
                         player.GetChildAt((int)partIndices.Y).TextureColor = equipmentDatum.SecondColour;
@@ -268,7 +281,7 @@ namespace RogueLauncher.Rewrite
                     this.UpdateNewIcons();
                     return;
                 }
-                if (currentEquipped == equipmentIndex)
+                if (currentEquipped == oldIndex)
                 {
                     equipArray[categoryIndex] = -1;
                     player.UpdateEquipmentColours();
@@ -276,6 +289,60 @@ namespace RogueLauncher.Rewrite
                     this.UpdateNewIcons();
                 }
             }
+        }
+
+        [Rewrite]
+        private void DisplayCategory(int equipmentType) { }
+
+        [Rewrite]
+        public void EaseInMenu() { }
+
+        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        public override void OnEnter()
+        {
+            if (m_rainSound != null)
+                m_rainSound.Dispose();
+
+            if ((DateTime.Now.Month == 12 ? true : DateTime.Now.Month == 1))
+                m_rainSound = SoundManager.PlaySound("snowloop_filtered");
+            else
+                m_rainSound = SoundManager.PlaySound("Rain1_Filtered");
+
+            if (Game.PlayerStats.TotalBlueprintsFound >= 75)
+                GameUtil.UnlockAchievement("FEAR_OF_THROWING_STUFF_OUT");
+
+            m_lockControls = true;
+            SoundManager.PlaySound("ShopMenuOpen");
+
+            m_confirmText.Opacity = 0f;
+            m_cancelText.Opacity = 0f;
+            m_navigationText.Opacity = 0f;
+
+            Tween.To(m_confirmText, 0.2f, Linear.EaseNone, "Opacity", "1");
+            Tween.To(m_cancelText, 0.2f, Linear.EaseNone, "Opacity", "1");
+            Tween.To(m_navigationText, 0.2f, Linear.EaseNone, "Opacity", "1");
+
+            m_confirmText.Text = "[Input:" + (int)InputKeys.MenuConfirm1 + "]  select/equip";
+            m_cancelText.Text = "[Input:" + (int)InputKeys.MenuCancel1 + "]  cancel/close menu";
+
+            if (InputManager.IsGamepadConnected())
+                m_navigationText.Text = "[Button:LeftStick] to navigate";
+            else
+                m_navigationText.Text = "Arrow keys to navigate";
+
+            m_currentEquipmentIndex = 0;
+            m_inCategoryMenu = true;
+            m_selectionIcon.Position = m_blacksmithUI.GetChildAt(6).AbsPosition;
+            m_currentCategoryIndex = 6;
+            UpdateIconStates();
+
+            DisplayCategory(0);
+            EaseInMenu();
+
+            Tween.To(this, 0.2f, Linear.EaseNone, "BackBufferOpacity", "0.5");
+            UpdateIconSelectionText();
+
+            base.OnEnter();
         }
 
         [Rewrite]

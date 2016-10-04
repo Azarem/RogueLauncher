@@ -1,5 +1,6 @@
 ﻿using AssemblyTranslator;
 using DS2DEngine;
+using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 
 namespace RogueLauncher.Rewrite
@@ -21,5 +22,9 @@ namespace RogueLauncher.Rewrite
 
         [Rewrite]
         public void DrawRenderTargets(Camera2D camera) { }
+        [Rewrite]
+        public void TeleportPlayer(int index) { }
+        [Rewrite]
+        public Vector2 CameraOffset;
     }
 }

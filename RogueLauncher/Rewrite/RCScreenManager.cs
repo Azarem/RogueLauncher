@@ -12,9 +12,12 @@ namespace RogueLauncher.Rewrite
         [Rewrite]
         private PlayerObj m_player;
         [Rewrite]
-        public PlayerObj Player { get { return null; } }
+        public PlayerObj Player { get; }
         [Rewrite]
-        public RenderTarget2D RenderTarget { get { return null; } }
+        public RenderTarget2D RenderTarget { get; }
+
+        [Rewrite]
+        public DialogueScreen DialogueScreen { get; }
 
         [Rewrite]
         public RCScreenManager(Game Game) : base(Game) { }
@@ -40,5 +43,8 @@ namespace RogueLauncher.Rewrite
 
         [Rewrite]
         public ProceduralLevelScreen GetLevelScreen() { return null; }
+
+        [Rewrite]
+        public void HideCurrentScreen() { }
     }
 }

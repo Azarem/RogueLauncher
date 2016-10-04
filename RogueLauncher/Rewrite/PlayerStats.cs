@@ -83,6 +83,10 @@ namespace RogueLauncher.Rewrite
         public float TotalHoursPlayed { get; set; }
         [Rewrite]
         public byte TotalRunesFound { get { return 0; } }
+        [Rewrite]
+        public byte TotalBlueprintsFound { get; }
+        [Rewrite]
+        public bool ReadLastDiary { get; set; }
 
         [Rewrite]
         public List<Vector4> EnemiesKilledList;

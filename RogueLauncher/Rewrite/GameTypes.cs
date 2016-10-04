@@ -63,5 +63,18 @@ namespace RogueLauncher.Rewrite
             [Rewrite]
             TOWER
         }
+
+        [Rewrite("RogueCastle.GameTypes+DoorType")]
+        public enum DoorType
+        {
+            [Rewrite]
+            NULL,
+            [Rewrite]
+            OPEN,
+            [Rewrite]
+            LOCKED,
+            [Rewrite]
+            BLOCKED
+        }
     }
 }

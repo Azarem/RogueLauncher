@@ -25,6 +25,8 @@ namespace RogueLauncher.Rewrite
         public bool CanBeKnockedBack { get; set; }
         [Rewrite]
         public Vector2 KnockBack { get; internal set; }
+        [Rewrite]
+        public bool IsTouchingGround { get; }
 
         [Rewrite]
         public CharacterObj(string spriteName, PhysicsManager physicsManager, ProceduralLevelScreen levelToAttachTo)
@@ -32,6 +34,9 @@ namespace RogueLauncher.Rewrite
         {
 
         }
+
+        [Rewrite]
+        public virtual void HandleInput() { }
 
         [Rewrite]
         public virtual void Update(GameTime gameTime) { }

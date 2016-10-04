@@ -31,8 +31,8 @@ namespace RogueLauncher.Rewrite
         public static PlayerStats PlayerStats;
         [Rewrite]
         public static EquipmentSystem EquipmentSystem;
-        [Rewrite]
-        public static InputMap GlobalInput;
+        //[Rewrite]
+        //public static InputMap GlobalInput;
         [Rewrite]
         public Microsoft.Xna.Framework.GraphicsDeviceManager GraphicsDeviceManager { get { return null; } }
         [Rewrite]
@@ -73,6 +73,8 @@ namespace RogueLauncher.Rewrite
         public static Effect MaskEffect;
         [Rewrite]
         public static float PlaySessionLength { get; set; }
+        [Rewrite]
+        public static float TotalGameTime;
 
         [Rewrite]
         public PhysicsManager PhysicsManager { get { return null; } }
@@ -80,7 +82,7 @@ namespace RogueLauncher.Rewrite
         [Rewrite]
         public static Game.SettingStruct GameConfig;
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        [Rewrite(action: RewriteAction.Swap)]
         protected virtual void Initialize()
         {
             string name;
@@ -265,14 +267,14 @@ namespace RogueLauncher.Rewrite
             Initialize();
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        [Rewrite(action: RewriteAction.Swap)]
         private void InitializeDefaultConfig()
         {
             InitializeDefaultConfig();
             RogueAPI.Game.InputManager.ThumbstickDeadzone = InputSystem.InputManager.Deadzone;
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        [Rewrite(action: RewriteAction.Swap)]
         public static void InitializeGlobalInput()
         {
             RogueAPI.Game.InputManager.ClearAll();
@@ -336,7 +338,7 @@ namespace RogueLauncher.Rewrite
         }
 
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        [Rewrite(action: RewriteAction.Swap)]
         protected virtual void LoadContent()
         {
             if (!m_contentLoaded)
@@ -346,7 +348,7 @@ namespace RogueLauncher.Rewrite
             }
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        [Rewrite(action: RewriteAction.Swap)]
         public void LoadAllEffects()
         {
             LoadAllEffects();
@@ -361,7 +363,7 @@ namespace RogueLauncher.Rewrite
             RogueAPI.Game.Shaders.Shadow = ShadowEffect;
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        [Rewrite(action: RewriteAction.Swap)]
         public void LoadAllSpriteFonts()
         {
             LoadAllSpriteFonts();
@@ -379,7 +381,7 @@ namespace RogueLauncher.Rewrite
         }
 
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        [Rewrite(action: RewriteAction.Replace)]
         public void LoadConfig()
         {
             Console.WriteLine("Loading Config file");
@@ -464,7 +466,7 @@ namespace RogueLauncher.Rewrite
             }
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        [Rewrite(action: RewriteAction.Replace)]
         public void SaveConfig()
         {
             Console.WriteLine("Saving Config file");
@@ -529,7 +531,7 @@ namespace RogueLauncher.Rewrite
             }
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        [Rewrite(action: RewriteAction.Add)]
         protected static PhysicsObjContainer CreateEnemyById(byte id, RogueAPI.Enemies.EnemyDifficulty difficulty)
         {
             switch (id)
@@ -578,49 +580,49 @@ namespace RogueLauncher.Rewrite
         //    }
         //}
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        [Rewrite(action: RewriteAction.Add)]
         protected static IEnumerable<BlankObj> GetCurrentTerrainObjects()
         {
             return Game.ScreenManager.Player.AttachedLevel.CurrentRoom.TerrainObjList;
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        [Rewrite(action: RewriteAction.Add)]
         protected static void AttachPhysicsObject(PhysicsObj obj)
         {
             Game.ScreenManager.Player.AttachedLevel.PhysicsManager.AddObject(obj);
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        [Rewrite(action: RewriteAction.Add)]
         protected static RogueAPI.Effects.EffectSpriteInstance AllocateSprite()
         {
             return Game.ScreenManager.Player.AttachedLevel.ImpactEffectPool.CheckOut();
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        [Rewrite(action: RewriteAction.Add)]
         protected static RogueAPI.Projectiles.ProjectileObj AllocateProjectile()
         {
             return Game.ScreenManager.Player.AttachedLevel.ProjectileManager.CheckOut();
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        [Rewrite(action: RewriteAction.Add)]
         protected static void AttachEnemyToCurrentRoom(PhysicsObjContainer enemy)
         {
             Game.ScreenManager.Player.AttachedLevel.AddEnemyToCurrentRoom((EnemyObj)enemy);
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        [Rewrite(action: RewriteAction.Add)]
         protected static int ActiveEnemyCount()
         {
             return Game.ScreenManager.Player.AttachedLevel.CurrentRoom.ActiveEnemies;
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        [Rewrite(action: RewriteAction.Add)]
         protected static bool KillableFilter(EnemyObj obj)
         {
             return !obj.NonKillable && !obj.IsKilled;
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        [Rewrite(action: RewriteAction.Add)]
         protected static IEnumerable<PhysicsObjContainer> GetEnemyList(bool killableOnly)
         {
             IEnumerable<EnemyObj> list = ScreenManager.Player.AttachedLevel.CurrentRoom.EnemyList;
@@ -629,7 +631,7 @@ namespace RogueLauncher.Rewrite
             return list;
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        [Rewrite(action: RewriteAction.Add)]
         protected static IEnumerable<PhysicsObjContainer> GetTempEnemyList(bool killableOnly)
         {
             IEnumerable<EnemyObj> list = ScreenManager.Player.AttachedLevel.CurrentRoom.TempEnemyList;
@@ -639,23 +641,25 @@ namespace RogueLauncher.Rewrite
         }
 
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        [Rewrite(action: RewriteAction.Add)]
         protected static IEnumerable<RogueAPI.Projectiles.ProjectileObj> GetProjectiles()
         {
             return Game.ScreenManager.Player.AttachedLevel.ProjectileManager.ActiveProjectileList;
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Add)]
+        [Rewrite(action: RewriteAction.Add)]
         protected static void DisplayNumberString(int number, string text, Color color, Vector2 position)
         {
             Game.ScreenManager.Player.AttachedLevel.TextManager.DisplayNumberStringText(number, text, color, position);
         }
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Swap)]
+        [Rewrite(action: RewriteAction.Swap)]
         protected virtual void Update(GameTime gameTime)
         {
             Update(gameTime);
-            RogueAPI.Game.InputManager.Update();
+
+            if (IsActive || LevelEV.ENABLE_OFFSCREEN_CONTROL)
+                RogueAPI.Game.InputManager.Update();
         }
 
 
