@@ -42,5 +42,7 @@ namespace RogueLauncher.Rewrite
         public virtual void Update(GameTime gameTime) { }
         [Rewrite]
         public void Blink(Color blinkColour, float duration) { }
+        [Rewrite]
+        public virtual void Kill(bool giveXP = true) { }
     }
 }

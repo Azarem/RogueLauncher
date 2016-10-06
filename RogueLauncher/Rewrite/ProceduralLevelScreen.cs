@@ -846,5 +846,11 @@ namespace RogueLauncher.Rewrite
 
             base.HandleInput();
         }
+
+        [Rewrite]
+        public void SetObjectKilledPlayer(GameObj obj) { }
+
+        [Rewrite]
+        public void UpdatePlayerHUDSpecialItem() { }
     }
 }

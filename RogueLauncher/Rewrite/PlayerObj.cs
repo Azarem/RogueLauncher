@@ -133,6 +133,14 @@ namespace RogueLauncher.Rewrite
         [Rewrite]
         private float m_currentMana;
         [Rewrite]
+        private IPhysicsObj m_closestGround;
+        [Rewrite]
+        private bool m_collidingLeftOnly;
+        [Rewrite]
+        private bool m_collidingRightOnly;
+        [Rewrite]
+        private TeleporterObj m_lastTouchedTeleporter;
+        [Rewrite]
         private Vector2 m_enemyKnockBack = Vector2.Zero;
         [Rewrite]
         public int MaxHealth { get { return 0; } }
@@ -192,6 +200,10 @@ namespace RogueLauncher.Rewrite
         [Rewrite]
         public float TotalGoldBonus { get { return 0; } }
         [Rewrite]
+        public bool InvincibleToSpikes { get; set; }
+        [Rewrite]
+        public float ClassDamageTakenMultiplier { get { return 1f; } }
+        [Rewrite]
         public float TotalMovementSpeedPercent { get { return 0; } }
         [Rewrite(action: RewriteAction.Replace)]
         public float CurrentMana
@@ -208,6 +220,10 @@ namespace RogueLauncher.Rewrite
                     m_currentMana = MaxMana;
             }
         }
+        [Rewrite]
+        public float InvincibilityTime { get; }
+        [Rewrite]
+        public bool ForceInvincible { get; set; }
         [Rewrite]
         public ProceduralLevelScreen AttachedLevel { get { return null; } }
         [Rewrite]
@@ -268,6 +284,15 @@ namespace RogueLauncher.Rewrite
         private Vector2 StrongEnemyKnockBack { get; set; }
         [Rewrite]
         public Vector2 EnemyKnockBack { get { return (m_currentLogicSet == m_standingAttack3LogicSet) ? StrongEnemyKnockBack : m_enemyKnockBack; } set { m_enemyKnockBack = value; } }
+
+        [Rewrite]
+        private float BlockInvincibleTime { get; set; }
+
+        [Rewrite]
+        public float BlockManaDrain { get; set; }
+
+        [Rewrite]
+        public bool ControlsLocked { get; }
 
         [Rewrite]
         public void UpdateEquipmentColours() { }
@@ -675,7 +700,7 @@ namespace RogueLauncher.Rewrite
         public override void HandleInput() { }
 
 
-        [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
+        [Rewrite(action: RewriteAction.Replace)]
         private void InputControls()
         {
             if (!LevelEV.CREATE_RETAIL_VERSION)
@@ -1077,6 +1102,389 @@ namespace RogueLauncher.Rewrite
                 m_isFlying = true;
             }
         }
+
+
+        [Rewrite(action: RewriteAction.Replace)]
+        public override void CollisionResponse(CollisionBox thisBox, CollisionBox otherBox, int collisionResponseType)
+        {
+            IPhysicsObj absParent = otherBox.AbsParent as IPhysicsObj;
+
+            //Activate teleporter
+            TeleporterObj teleporter = otherBox.Parent as TeleporterObj;
+            if (teleporter != null && !ControlsLocked && IsTouchingGround && InputManager.IsNewlyPressed(InputKeys.PlayerUp1 | InputKeys.PlayerUp2))
+            {
+                StopAllSpells();
+                LockControls();
+                m_lastTouchedTeleporter = teleporter;
+                Tween.RunFunction(0f, AttachedLevel, "DisplayMap", true);
+            }
+
+            //Activate boss door
+            DoorObj doorObj = otherBox.Parent as DoorObj;
+            if (doorObj != null && !ControlsLocked && IsTouchingGround && doorObj.IsBossDoor && !doorObj.Locked && InputManager.IsNewlyPressed(InputFlags.PlayerUp1 | InputFlags.PlayerUp2))
+            {
+                if (doorObj.Name != "FinalBossDoor")
+                {
+                    RoomObj linkedRoom = doorObj.Room.LinkedRoom;
+                    if (linkedRoom != null)
+                    {
+                        foreach (DoorObj door in linkedRoom.DoorList)
+                        {
+                            if (!door.IsBossDoor)
+                                continue;
+
+                            if (linkedRoom is LastBossChallengeRoom)
+                                linkedRoom.LinkedRoom = AttachedLevel.CurrentRoom;
+
+                            StopAllSpells();
+                            CurrentSpeed = 0f;
+                            LockControls();
+                            (m_levelScreen.ScreenManager as RCScreenManager).StartWipeTransition();
+                            Tween.RunFunction(0.2f, this, "EnterBossRoom", new Vector2(door.Width / 2f, door.Bounds.Bottom - (Bounds.Bottom - Y)));
+                            Tween.RunFunction(0.2f, m_levelScreen.ScreenManager, "EndWipeTransition");
+                            break;
+                        }
+                    }
+                }
+                else
+                    Game.ScreenManager.DisplayScreen(ScreenType.Ending, true, null);
+            }
+
+
+            BreakableObj breakableObj = absParent as BreakableObj;
+
+            //Down-attack hit response
+            if (breakableObj != null && IsAirAttacking && thisBox.Type == Consts.WEAPON_HITBOX)
+            {
+                IsAirAttacking = false;
+                AccelerationY = -AirAttackKnockBack;
+                NumAirBounces++;
+            }
+
+            //Break furniture
+            if (Game.PlayerStats.Traits.X == TraitType.NoFurniture || Game.PlayerStats.Traits.Y == TraitType.NoFurniture)
+            {
+                if (breakableObj != null && !breakableObj.Broken)
+                    breakableObj.Break();
+
+                if (absParent.GetType() == typeof(PhysicsObj) && (absParent as PhysicsObj).SpriteName != "CastleEntranceGate_Sprite")
+                    return;
+            }
+
+            if (collisionResponseType == Consts.COLLISIONRESPONSE_TERRAIN && (absParent.CollisionTypeTag == GameTypes.CollisionType_WALL || absParent.CollisionTypeTag == GameTypes.CollisionType_WALL_FOR_PLAYER || absParent.CollisionTypeTag == GameTypes.CollisionType_ENEMYWALL || absParent.CollisionTypeTag == GameTypes.CollisionType_GLOBAL_DAMAGE_WALL))
+            {
+                //float accelerationY = AccelerationY;
+
+                bool shouldCollide = true;
+
+                if (m_dropThroughGroundTimer > 0f && !absParent.CollidesBottom && absParent.CollidesTop)
+                    shouldCollide = false;
+
+                if (m_isTouchingGround && !absParent.CollidesBottom && absParent.CollidesTop && absParent.TerrainBounds.Top < TerrainBounds.Bottom - 10)
+                    shouldCollide = false;
+
+                if (!absParent.CollidesBottom && Bounds.Bottom > absParent.TerrainBounds.Top + 10 && !m_isTouchingGround)
+                    shouldCollide = false;
+
+                if (!absParent.CollidesBottom && absParent.CollidesTop && (State == (int)PlayerState.Flying || State == (int)PlayerState.Dragon))
+                    shouldCollide = false;
+
+                Vector2 vector21 = CollisionMath.CalculateMTD(thisBox.AbsRect, otherBox.AbsRect);
+                if ((m_collidingLeftOnly || m_collidingRightOnly) && Math.Abs(vector21.X) < 10f && !m_isTouchingGround && !(absParent is HazardObj))
+                    shouldCollide = false;
+
+                //X adjustment
+                if (!absParent.CollidesLeft && !absParent.CollidesRight && absParent.CollidesTop && absParent.CollidesBottom && !(absParent is HazardObj))
+                {
+                    if (Game.PlayerStats.Traits.X == TraitType.Dwarfism || Game.PlayerStats.Traits.Y == TraitType.Dwarfism)
+                        shouldCollide = false;
+                    else if (X >= absParent.TerrainBounds.Center.X)
+                        X += absParent.TerrainBounds.Right - TerrainBounds.Left;
+                    else
+                        X -= TerrainBounds.Right - absParent.TerrainBounds.Left;
+                }
+
+                //Y adjustment
+                if (m_isTouchingGround && m_closestGround == absParent)
+                {
+                    shouldCollide = false;
+                    if (!(absParent is HazardObj) || absParent.Rotation != -90f)
+                        Y += m_closestGround.TerrainBounds.Top - TerrainBounds.Bottom;
+                    else
+                        Y += m_closestGround.Bounds.Top - TerrainBounds.Bottom + 15;
+                    AccelerationY = 0f;
+                }
+
+                if (shouldCollide)
+                    base.CollisionResponse(thisBox, otherBox, collisionResponseType);
+
+                Vector2 intersect = CollisionMath.RotatedRectIntersectsMTD(thisBox.AbsRect, thisBox.AbsRotation, Vector2.Zero, otherBox.AbsRect, otherBox.AbsRotation, Vector2.Zero);
+                if (intersect.Y != 0f && otherBox.AbsRotation != 0f)
+                    X -= intersect.X;
+            }
+
+            if (thisBox.Type == Consts.BODY_HITBOX && otherBox.Type == Consts.WEAPON_HITBOX && (absParent.CollisionTypeTag == GameTypes.CollisionType_ENEMY || absParent.CollisionTypeTag == GameTypes.CollisionType_ENEMYWALL || absParent.CollisionTypeTag == GameTypes.CollisionType_GLOBAL_DAMAGE_WALL) && State != (int)PlayerState.Hurt && m_invincibleCounter <= 0)
+            {
+                EnemyObj enemyObj = absParent as EnemyObj;
+                if (enemyObj != null && enemyObj.IsDemented)
+                    return;
+
+                ProjectileObj projectileObj = absParent as ProjectileObj;
+                if (projectileObj != null && projectileObj.IsDemented)
+                    return;
+
+                if (!LevelEV.ENABLE_PLAYER_DEBUG)
+                {
+                    if (State == (int)PlayerState.Blocking && (CurrentMana > 0f || m_blockInvincibleCounter > 0f) && (projectileObj == null || projectileObj != null && projectileObj.Spell != SpellType.Boomerang && projectileObj.Spell != SpellType.Bounce))
+                    {
+                        if (CanBeKnockedBack)
+                        {
+                            Point center = Rectangle.Intersect(thisBox.AbsRect, otherBox.AbsRect).Center;
+                            Vector2 position = new Vector2(center.X, center.Y);
+                            if (position == Vector2.Zero)
+                                position = Position;
+
+                            m_levelScreen.ImpactEffectPool.DisplayBlockImpactEffect(position, Vector2.One);
+                            CurrentSpeed = 0f;
+
+                            AccelerationX = (otherBox.AbsParent.Bounds.Left + otherBox.AbsParent.Bounds.Width / 2 > X)
+                                ? -KnockBack.X
+                                : KnockBack.X;
+
+                            AccelerationY = -KnockBack.Y;
+                            Blink(Color.LightBlue, 0.1f);
+                        }
+
+                        if (m_blockInvincibleCounter <= 0f)
+                        {
+                            CurrentMana -= BlockManaDrain;
+                            m_blockInvincibleCounter = BlockInvincibleTime;
+                            m_levelScreen.TextManager.DisplayNumberStringText(-25, "mp", Color.SkyBlue, new Vector2(X, Bounds.Top));
+                        }
+
+                        SoundManager.PlaySound("Player_Block");
+                    }
+                    else if (m_invincibleCounter <= 0)
+                        HitPlayer(otherBox.AbsParent);
+
+                    ProjectileObj otherParent = otherBox.AbsParent as ProjectileObj;
+                    if (otherParent != null && otherParent.DestroysWithEnemy && !m_assassinSpecialActive)
+                        otherParent.RunDestroyAnimation(true);
+
+                }
+            }
+
+            //Pick up item
+            ItemDropObj itemDropObj = absParent as ItemDropObj;
+            if (itemDropObj != null && itemDropObj.IsCollectable)
+            {
+                itemDropObj.GiveReward(this, m_levelScreen.TextManager);
+                itemDropObj.IsCollidable = false;
+                itemDropObj.IsWeighted = false;
+                itemDropObj.AnimationDelay = 0.0166666675f;
+                itemDropObj.AccelerationY = 0f;
+                itemDropObj.AccelerationX = 0f;
+                Tween.By(itemDropObj, 0.4f, Quad.EaseOut, "Y", "-120");
+                Tween.To(itemDropObj, 0.1f, Linear.EaseNone, "delay", "0.6", "Opacity", "0");
+                Tween.AddEndHandlerToLastTween(m_levelScreen.ItemDropManager, "DestroyItemDrop", itemDropObj);
+                SoundManager.PlaySound("CoinDrop1", "CoinDrop2", "CoinDrop3", "CoinDrop4", "CoinDrop5");
+            }
+
+            //Open chest
+            ChestObj chestObj = absParent as ChestObj;
+            if (chestObj != null && !ControlsLocked && m_isTouchingGround && InputManager.IsNewlyPressed(InputFlags.PlayerUp1 | InputFlags.PlayerUp2) && !chestObj.IsOpen)
+                chestObj.OpenChest(m_levelScreen.ItemDropManager, this);
+        }
+
+        [Rewrite(action: RewriteAction.Replace)]
+        public void HitPlayer(GameObj obj)
+        {
+            bool shouldHit = true;
+
+            if (obj is HazardObj && (Game.PlayerStats.SpecialItem == SpecialItemType.SpikeImmunity && obj.Bounds.Top > Y || InvincibleToSpikes))
+                shouldHit = false;
+
+            ProjectileObj projectileObj = obj as ProjectileObj;
+            EnemyObj projectileSource = null;
+
+            if (projectileObj != null)
+            {
+                if (projectileObj.IsDemented)
+                    shouldHit = false;
+                else if (projectileObj.Spell == SpellType.Bounce || projectileObj.Spell == SpellType.Boomerang)
+                {
+                    shouldHit = false;
+                    projectileObj.KillProjectile();
+                    m_levelScreen.ImpactEffectPool.SpellCastEffect(projectileObj.Position, CDGMath.AngleBetweenPts(Position, projectileObj.Position), false);
+                }
+
+                projectileSource = projectileObj.Source as EnemyObj;
+                if (projectileSource != null && (projectileSource.Difficulty == GameTypes.EnemyDifficulty.MINIBOSS || projectileSource is EnemyObj_LastBoss) && projectileSource.CurrentHealth <= 0)
+                    shouldHit = false;
+            }
+
+            EnemyObj enemyObj = obj as EnemyObj;
+            if (enemyObj != null && enemyObj.IsDemented)
+                shouldHit = false;
+
+            if (enemyObj != null && (enemyObj.Difficulty == GameTypes.EnemyDifficulty.MINIBOSS || enemyObj is EnemyObj_LastBoss) && enemyObj.CurrentHealth <= 0)
+                shouldHit = false;
+
+            if (shouldHit && (!ForceInvincible || ForceInvincible && obj is HazardObj))
+            {
+                Blink(Color.Red, 0.1f);
+                m_levelScreen.ImpactEffectPool.DisplayPlayerImpactEffect(Position);
+                AccelerationYEnabled = true;
+                UnlockControls();
+
+                int damage = 0;
+                if (projectileObj != null)
+                    damage = projectileObj.Damage;
+                else if (obj is IDealsDamageObj)
+                    damage = ((IDealsDamageObj)obj).Damage;
+
+                damage = (int)((damage - damage * TotalDamageReduc) * ClassDamageTakenMultiplier);
+
+                if (damage < 0)
+                    damage = 0;
+
+                if (!Game.PlayerStats.TutorialComplete)
+                    damage = 0;
+
+                CurrentHealth -= damage;
+
+                //Apply damage return to enemy
+                if (enemyObj != null && CurrentHealth > 0)
+                {
+                    int totalDamageReturn = (int)(damage * TotalDamageReturn);
+                    if (totalDamageReturn > 0)
+                        enemyObj.HitEnemy(totalDamageReturn, enemyObj.Position, true);
+                }
+
+                //Apply damage return to projectile source
+                if (projectileObj != null && projectileObj.CollisionTypeTag == GameTypes.CollisionType_ENEMY)
+                {
+                    if (projectileSource != null && !projectileSource.IsKilled && !projectileSource.IsDemented && CurrentHealth > 0)
+                    {
+                        int projDamageReturn = (int)(damage * TotalDamageReturn);
+                        if (projDamageReturn > 0)
+                            projectileSource.HitEnemy(projDamageReturn, projectileSource.Position, true);
+                    }
+                }
+
+                m_isJumping = false;
+                m_isFlying = false;
+                DisableGravity = false;
+
+                if (!CanBeKnockedBack)
+                    m_invincibleCounter = (int)(InvincibilityTime * 1000f);
+                else
+                {
+                    if (Game.PlayerStats.Traits.X == TraitType.Tourettes || Game.PlayerStats.Traits.Y == TraitType.Tourettes)
+                    {
+                        m_swearBubble.ChangeSprite("SwearBubble" + CDGMath.RandomInt(1, 4) + "_Sprite");
+                        m_swearBubble.Visible = true;
+                        m_swearBubbleCounter = 1f;
+                    }
+
+                    State = (int)PlayerState.Hurt;
+                    UpdateAnimationState();
+
+                    if (m_currentLogicSet.IsActive)
+                        m_currentLogicSet.Stop();
+
+                    IsAirAttacking = false;
+                    AnimationDelay = m_startingAnimationDelay;
+                    CurrentSpeed = 0f;
+
+                    float knockbackInertia = 1f;
+                    if (Game.PlayerStats.Traits.X == TraitType.Ectomorph || Game.PlayerStats.Traits.Y == TraitType.Ectomorph)
+                        knockbackInertia = 1.85f;
+
+                    if (Game.PlayerStats.Traits.X == TraitType.Endomorph || Game.PlayerStats.Traits.Y == TraitType.Endomorph)
+                        knockbackInertia = 0.5f;
+
+                    if ((obj.Bounds.Left + obj.Bounds.Width / 2) <= X)
+                        AccelerationX = KnockBack.X * knockbackInertia;
+                    else
+                        AccelerationX = -KnockBack.X * knockbackInertia;
+
+                    AccelerationY = -KnockBack.Y * knockbackInertia;
+                }
+
+                if (CurrentHealth <= 0)
+                {
+                    if (Game.PlayerStats.SpecialItem == SpecialItemType.Revive)
+                    {
+                        CurrentHealth = (int)(MaxHealth * 0.25f);
+                        Game.PlayerStats.SpecialItem = 0;
+                        (Game.ScreenManager.CurrentScreen as ProceduralLevelScreen).UpdatePlayerHUDSpecialItem();
+                        m_invincibleCounter = (int)(InvincibilityTime * 1000f);
+                        (m_levelScreen.ScreenManager as RCScreenManager).DisplayScreen(ScreenType.DeathDefy, true, null);
+                    }
+                    else if (CDGMath.RandomInt(1, 100) <= SkillSystem.GetSkill(SkillType.Death_Dodge).ModifierAmount * 100f)
+                    {
+                        CurrentHealth = (int)(MaxHealth * 0.1f);
+                        m_invincibleCounter = (int)(InvincibilityTime * 1000f);
+                        (m_levelScreen.ScreenManager as RCScreenManager).DisplayScreen(ScreenType.DeathDefy, true, null);
+                    }
+                    else
+                    {
+                        ChallengeBossRoomObj currentRoom = this.AttachedLevel.CurrentRoom as ChallengeBossRoomObj;
+                        if (currentRoom == null)
+                        {
+                            AttachedLevel.SetObjectKilledPlayer(obj);
+                            Kill(true);
+                        }
+                        else
+                            currentRoom.KickPlayerOut();
+                    }
+                }
+
+                //Display damage text
+                if (!m_levelScreen.IsDisposed)
+                {
+                    if (Game.PlayerStats.Traits.X == TraitType.Hypochondriac || Game.PlayerStats.Traits.Y == TraitType.Hypochondriac)
+                        m_levelScreen.TextManager.DisplayNumberText(damage * 100 + CDGMath.RandomInt(1, 99), Color.Red, new Vector2(X, Bounds.Top));
+                    else
+                        m_levelScreen.TextManager.DisplayNumberText(damage, Color.Red, new Vector2(X, Bounds.Top));
+                }
+
+                //Drop coins when carrying special item LoseCoins
+                if (Game.PlayerStats.SpecialItem == SpecialItemType.LoseCoins)
+                {
+                    int gold = (int)(Game.PlayerStats.Gold * 0.25f / 10f);
+                    if (gold > 50)
+                        gold = 50;
+
+                    if (gold > 0 && AttachedLevel.ItemDropManager.AvailableItems > gold)
+                    {
+                        float goldMultiplier = 1f;
+                        if (Game.PlayerStats.HasArchitectFee)
+                            goldMultiplier = 0.6f;
+
+                        int totalGoldLost = (int)((gold * 10) * (1f + TotalGoldBonus) * goldMultiplier);
+                        Game.PlayerStats.Gold -= totalGoldLost;
+
+                        for (int i = 0; i < gold; i++)
+                            m_levelScreen.ItemDropManager.DropItemWide(Position, 1, 10f);
+
+                        if (totalGoldLost > 0)
+                            AttachedLevel.TextManager.DisplayNumberStringText(-totalGoldLost, "gold", Color.Yellow, new Vector2(X, Bounds.Top));
+                    }
+                }
+
+                if (Game.PlayerStats.IsFemale)
+                    SoundManager.PlaySound("Player_Female_Damage_03", "Player_Female_Damage_04", "Player_Female_Damage_05", "Player_Female_Damage_06", "Player_Female_Damage_07");
+                else
+                    SoundManager.PlaySound("Player_Male_Injury_01", "Player_Male_Injury_02", "Player_Male_Injury_03", "Player_Male_Injury_04", "Player_Male_Injury_05", "Player_Male_Injury_06", "Player_Male_Injury_07", "Player_Male_Injury_08", "Player_Male_Injury_09", "Player_Male_Injury_10");
+
+                SoundManager.PlaySound("EnemyHit1", "EnemyHit2", "EnemyHit3", "EnemyHit4", "EnemyHit5", "EnemyHit6");
+            }
+        }
+
+        [Rewrite]
+        public override void Kill(bool giveXP = true) { }
 
         [Rewrite]
         public void LockControls()

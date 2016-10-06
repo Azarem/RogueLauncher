@@ -40,6 +40,9 @@ namespace RogueLauncher.Rewrite
         protected PlayerObj m_target;
 
         [Rewrite]
+        public GameTypes.EnemyDifficulty Difficulty { get; internal set; }
+
+        [Rewrite]
         public EnemyObj(string spriteName, PlayerObj target, PhysicsManager physicsManager, ProceduralLevelScreen levelToAttachTo, GameTypes.EnemyDifficulty difficulty)
             : base(spriteName, physicsManager, levelToAttachTo)
         {

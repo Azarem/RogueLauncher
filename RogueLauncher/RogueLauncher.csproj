@@ -111,12 +111,15 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rewrite\BlacksmithScreen.cs" />
     <Compile Include="Rewrite\BonusRoomObj.cs" />
+    <Compile Include="Rewrite\BorderObj.cs" />
     <Compile Include="Rewrite\BreakableObj.cs" />
     <Compile Include="Rewrite\CarnivalShoot1BonusRoom.cs" />
     <Compile Include="Rewrite\CarnivalShoot2BonusRoom.cs" />
+    <Compile Include="Rewrite\ChallengeBossRoomObj.cs" />
     <Compile Include="Rewrite\ChangeControlsOptionsObj.cs" />
     <Compile Include="Rewrite\CharacterObj.cs" />
     <Compile Include="Rewrite\ChestBonusRoomObj.cs" />
+    <Compile Include="Rewrite\ChestObj.cs" />
     <Compile Include="Rewrite\ClassType.cs" />
     <Compile Include="Rewrite\CreditsScreen.cs" />
     <Compile Include="Rewrite\DeadZoneOptionsObj.cs" />
@@ -127,6 +130,7 @@
     <Compile Include="Rewrite\EnemyHUDObj.cs" />
     <Compile Include="Rewrite\EnemyObj.cs" />
     <Compile Include="Rewrite\EnemyObj_Chicken.cs" />
+    <Compile Include="Rewrite\EnemyObj_LastBoss.cs" />
     <Compile Include="Rewrite\EquipmentAbilityType.cs" />
     <Compile Include="Rewrite\EquipmentBaseType.cs" />
     <Compile Include="Rewrite\EquipmentCategoryType.cs" />
@@ -137,11 +141,14 @@
     <Compile Include="Rewrite\GameUtil.cs" />
     <Compile Include="Rewrite\GaussianBlur.cs" />
     <Compile Include="Rewrite\GetItemScreen.cs" />
+    <Compile Include="Rewrite\HazardObj.cs" />
     <Compile Include="Rewrite\IDealsDamageObj.cs" />
     <Compile Include="Rewrite\ImpactEffectPool.cs" />
     <Compile Include="Rewrite\ItemDropManager.cs" />
+    <Compile Include="Rewrite\ItemDropObj.cs" />
     <Compile Include="Rewrite\KeyIconObj.cs" />
     <Compile Include="Rewrite\KeyIconTextObj.cs" />
+    <Compile Include="Rewrite\LastBossChallengeRoom.cs" />
     <Compile Include="Rewrite\LevelEV.cs" />
     <Compile Include="Rewrite\LineageObj.cs" />
     <Compile Include="Rewrite\LineageScreen.cs" />
@@ -162,6 +169,7 @@
     <Compile Include="Rewrite\ProjectileIconPool.cs" />
     <Compile Include="Rewrite\ProjectileManager.cs" />
     <None Include="Rewrite\ProjectileObj.cs" />
+    <Compile Include="Rewrite\RaindropObj.cs" />
     <Compile Include="Rewrite\RCScreenManager.cs" />
     <Compile Include="Rewrite\RoomObj.cs" />
     <Compile Include="Rewrite\SaveGameManager.cs" />
@@ -174,6 +182,7 @@
     <Compile Include="Rewrite\SpecialItemType.cs" />
     <Compile Include="Rewrite\SpellEV.cs" />
     <Compile Include="Rewrite\SpellType.cs" />
+    <Compile Include="Rewrite\TeleporterObj.cs" />
     <Compile Include="Rewrite\TerrainObj.cs" />
     <Compile Include="Rewrite\TextManager.cs" />
     <Compile Include="Rewrite\TraitType.cs" />
