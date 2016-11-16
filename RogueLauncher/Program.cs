@@ -186,7 +186,11 @@ namespace RogueLauncher
             manager.CreateAssembly(_newAssemblyName, debug);
             var asmBytes = manager.SaveAndGetBytes(PortableExecutableKinds.ILOnly | PortableExecutableKinds.Required32Bit, ImageFileMachine.I386, !debug);
 
-            Console.WriteLine("** ASSEMBLY CREATION COMPLETED IN " + DateTime.Now.Subtract(timestamp).TotalSeconds + "s **");
+            var totalSeconds = DateTime.Now.Subtract(timestamp).TotalSeconds;
+            Console.WriteLine("** ASSEMBLY CREATION COMPLETED IN " + totalSeconds + "s **");
+
+            //using (var str = new StreamWriter("BuildLog.txt"))
+            //    str.WriteLine("** ASSEMBLY CREATION COMPLETED IN " + totalSeconds + "s **");
 
             return asmBytes;
         }

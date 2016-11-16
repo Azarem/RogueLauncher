@@ -145,6 +145,14 @@ namespace AssemblyTranslator
                 TypeRewrite typeRewrite = null;
                 if (repl != null)
                 {
+                    if (repl.action == RewriteAction.Add)
+                    {
+                        typeTarget = new TypeGraph(t, null, _graph._modules.First());
+                        if (repl.typeName != null)
+                            typeTarget.FullName = repl.typeName;
+                        continue;
+                    }
+
                     typeTarget = (from x in Graph.Modules
                                   from y in x.TypeGraphs
                                   where y.FullName == repl.typeName
