@@ -21,8 +21,18 @@ namespace RogueLauncher.Rewrite
         public int TimesCastleBeaten { get; set; }
         [Rewrite]
         public bool ChallengeLastBossBeaten { get; set; }
-        [Rewrite]
-        public byte Spell { get; set; }
+        [Rewrite(action: RewriteAction.Replace)]
+        public byte Spell
+        {
+            get
+            {
+                return RogueAPI.Game.Player.Spell?.SpellId ?? 0;
+            }
+            set
+            {
+                RogueAPI.Game.Player.Spell = RogueAPI.Spells.SpellDefinition.GetById(value);
+            }
+        }
         [Rewrite]
         public bool IsFemale { get; set; }
         [Rewrite]

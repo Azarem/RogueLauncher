@@ -73,7 +73,11 @@ namespace RogueLauncher.Rewrite
                         return;
                     }
 
-                    int damage = (absParent as IDealsDamageObj).Damage;
+                    int damage;
+                    if (absParent is RogueAPI.Projectiles.ProjectileObj)
+                        damage = (absParent as RogueAPI.Projectiles.ProjectileObj).Damage;
+                    else
+                        damage = (absParent as IDealsDamageObj).Damage;
 
                     //Apply critical damage
                     bool isPlayer = absParent == m_target;

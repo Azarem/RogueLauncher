@@ -466,6 +466,9 @@ namespace RogueLauncher.Rewrite
         [Obfuscation(Exclude = true), Rewrite(action: RewriteAction.Replace)]
         public override void Update(GameTime gameTime)
         {
+            var evt = new RogueAPI.PlayerUpdateEvent(gameTime, !(m_levelScreen.CurrentRoom is EndingRoomObj) && ScaleX > 0.1f);
+            RogueAPI.Event.Trigger(evt);
+
             float totalSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             if (m_dropThroughGroundTimer > 0f)
@@ -478,40 +481,40 @@ namespace RogueLauncher.Rewrite
                 m_rapidSpellCastDelay -= totalSeconds;
 
 
-            if (!(m_levelScreen.CurrentRoom is EndingRoomObj) && ScaleX > 0.1f)
-            {
-                RogueAPI.Game.Player.UpdatePlayerEffects(this, gameTime);
-                //if ((Game.PlayerStats.Traits.Y == 22f || Game.PlayerStats.Traits.X == 22f) && base.CurrentSpeed == 0f && this.m_ambilevousTimer > 0f)
-                //{
-                //    this.m_ambilevousTimer -= totalSeconds;
-                //    if (this.m_ambilevousTimer <= 0f)
-                //    {
-                //        this.m_ambilevousTimer = 0.4f;
-                //        this.m_levelScreen.ImpactEffectPool.DisplayQuestionMark(new Vector2(base.X, this.Bounds.Top));
-                //    }
-                //}
+            //if (!(m_levelScreen.CurrentRoom is EndingRoomObj) && ScaleX > 0.1f)
+            //{
+            //    RogueAPI.Game.Player.UpdatePlayerEffects(this, gameTime);
+            //    //if ((Game.PlayerStats.Traits.Y == 22f || Game.PlayerStats.Traits.X == 22f) && base.CurrentSpeed == 0f && this.m_ambilevousTimer > 0f)
+            //    //{
+            //    //    this.m_ambilevousTimer -= totalSeconds;
+            //    //    if (this.m_ambilevousTimer <= 0f)
+            //    //    {
+            //    //        this.m_ambilevousTimer = 0.4f;
+            //    //        this.m_levelScreen.ImpactEffectPool.DisplayQuestionMark(new Vector2(base.X, this.Bounds.Top));
+            //    //    }
+            //    //}
 
-                //if ((Game.PlayerStats.Class == 6 || Game.PlayerStats.Class == 14) && this.m_wizardSparkleCounter > 0f)
-                //{
-                //    this.m_wizardSparkleCounter -= totalSeconds;
-                //    if (this.m_wizardSparkleCounter <= 0f)
-                //    {
-                //        this.m_wizardSparkleCounter = 0.2f;
-                //        this.m_levelScreen.ImpactEffectPool.DisplayChestSparkleEffect(base.Position);
-                //        this.m_levelScreen.ImpactEffectPool.DisplayChestSparkleEffect(base.Position);
-                //    }
-                //}
+            //    //if ((Game.PlayerStats.Class == 6 || Game.PlayerStats.Class == 14) && this.m_wizardSparkleCounter > 0f)
+            //    //{
+            //    //    this.m_wizardSparkleCounter -= totalSeconds;
+            //    //    if (this.m_wizardSparkleCounter <= 0f)
+            //    //    {
+            //    //        this.m_wizardSparkleCounter = 0.2f;
+            //    //        this.m_levelScreen.ImpactEffectPool.DisplayChestSparkleEffect(base.Position);
+            //    //        this.m_levelScreen.ImpactEffectPool.DisplayChestSparkleEffect(base.Position);
+            //    //    }
+            //    //}
 
-                //if ((Game.PlayerStats.Class == 3 || Game.PlayerStats.Class == 11) && this.m_assassinSmokeTimer > 0f)
-                //{
-                //    this.m_assassinSmokeTimer -= totalSeconds;
-                //    if (this.m_assassinSmokeTimer <= 0f)
-                //    {
-                //        this.m_assassinSmokeTimer = base.CurrentSpeed > 0f ? 0.05f : 0.15f;
-                //        this.m_levelScreen.ImpactEffectPool.BlackSmokeEffect(this);
-                //    }
-                //}
-            }
+            //    //if ((Game.PlayerStats.Class == 3 || Game.PlayerStats.Class == 11) && this.m_assassinSmokeTimer > 0f)
+            //    //{
+            //    //    this.m_assassinSmokeTimer -= totalSeconds;
+            //    //    if (this.m_assassinSmokeTimer <= 0f)
+            //    //    {
+            //    //        this.m_assassinSmokeTimer = base.CurrentSpeed > 0f ? 0.05f : 0.15f;
+            //    //        this.m_levelScreen.ImpactEffectPool.BlackSmokeEffect(this);
+            //    //    }
+            //    //}
+            //}
 
             if (m_swearBubbleCounter > 0f)
             {
